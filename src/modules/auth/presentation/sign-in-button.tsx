@@ -7,7 +7,7 @@ export function SignInButton() {
   return (
     <Button
       onClick={() =>
-        signIn.social({ provider: "google", callbackURL: "/dashboard" })
+        signIn.social({ provider: "google", callbackURL: "/boards" })
       }
     >
       Google でサインイン
