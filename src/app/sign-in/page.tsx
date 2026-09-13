@@ -3,7 +3,7 @@ import { getSession } from "@/modules/auth/presentation/session";
 import { SignInButton } from "@/modules/auth/presentation/sign-in-button";
 
 export default async function SignInPage() {
-  if (await getSession()) redirect("/dashboard");
+  if (await getSession()) redirect("/boards");
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
