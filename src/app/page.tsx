@@ -10,10 +10,10 @@ export default async function Home() {
       <h1 className="font-semibold text-3xl tracking-tight">tackup</h1>
       <p className="text-muted-foreground">Next.js + Drizzle + Better Auth</p>
       <Link
-        href={session ? "/dashboard" : "/sign-in"}
+        href={session ? "/boards" : "/sign-in"}
         className={buttonVariants()}
       >
-        {session ? "ダッシュボードへ" : "サインイン"}
+        {session ? "ボードへ" : "サインイン"}
       </Link>
     </main>
   );
