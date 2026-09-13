@@ -5,7 +5,7 @@ import { SignInButton } from "./sign-in-button";
 
 vi.mock("./auth-client", () => ({ signIn: { social: vi.fn() } }));
 
-test("signs in with Google and returns to the dashboard", () => {
+test("googleでサインインし、ボード画面にリダイレクトされる", () => {
   render(<SignInButton />);
 
   const button = screen.getByRole("button", { name: "Google でサインイン" });
@@ -14,6 +14,6 @@ test("signs in with Google and returns to the dashboard", () => {
   fireEvent.click(button);
   expect(signIn.social).toHaveBeenCalledWith({
     provider: "google",
-    callbackURL: "/dashboard",
+    callbackURL: "/boards",
   });
 });
