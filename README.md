@@ -2,17 +2,17 @@
 
 Next.js のテンプレートです。
 
-| 分類 | 技術 |
-| --- | --- |
-| フレームワーク | Next.js 16 (App Router, React Compiler) / React 19 / TypeScript |
-| パッケージマネージャー | bun |
-| UI | Tailwind CSS v4 / shadcn/ui (base-nova) |
-| DB | PostgreSQL 18 / Drizzle ORM |
-| 認証 | Better Auth (Google OAuth) |
-| バリデーション・環境変数 | Zod / @t3-oss/env-nextjs |
-| Lint・フォーマット | Biome |
-| テスト | Vitest + Testing Library / Playwright |
-| CI | GitHub Actions |
+| 分類                     | 技術                                                            |
+| ------------------------ | --------------------------------------------------------------- |
+| フレームワーク           | Next.js 16 (App Router, React Compiler) / React 19 / TypeScript |
+| パッケージマネージャー   | bun                                                             |
+| UI                       | Tailwind CSS v4 / shadcn/ui (base-nova)                         |
+| DB                       | PostgreSQL 18 / Drizzle ORM                                     |
+| 認証                     | Better Auth (Google OAuth)                                      |
+| バリデーション・環境変数 | Zod / @t3-oss/env-nextjs                                        |
+| Lint・フォーマット       | Biome                                                           |
+| テスト                   | Vitest + Testing Library / Playwright                           |
+| CI                       | GitHub Actions                                                  |
 
 ## セットアップ
 
@@ -32,18 +32,18 @@ bun run dev
 
 ## スクリプト
 
-| コマンド | 内容 |
-| --- | --- |
-| `bun run dev` | 開発サーバーを起動 |
-| `bun run build` / `bun run start` | 本番ビルド / 本番サーバーを起動 |
-| `bun run lint` / `bun run format` | Biome と依存ルールのチェック / Biome で自動修正 |
-| `bun run typecheck` | 型チェック |
-| `bun run test` | ユニットテスト (Vitest) |
-| `bun run test:e2e` | E2E テスト (Playwright、初回は `bunx playwright install chromium`) |
-| `bun run db:generate` | スキーマからマイグレーションを生成 |
-| `bun run db:migrate` | マイグレーションを適用 |
-| `bun run db:studio` | Drizzle Studio を起動 |
-| `bun run auth:generate` | Better Auth の設定から `src/modules/auth/infrastructure/schema.ts` を再生成 |
+| コマンド                          | 内容                                                                        |
+| --------------------------------- | --------------------------------------------------------------------------- |
+| `bun run dev`                     | 開発サーバーを起動                                                          |
+| `bun run build` / `bun run start` | 本番ビルド / 本番サーバーを起動                                             |
+| `bun run lint` / `bun run format` | Biome と依存ルールのチェック / Biome で自動修正                             |
+| `bun run typecheck`               | 型チェック                                                                  |
+| `bun run test`                    | ユニットテスト (Vitest)                                                     |
+| `bun run test:e2e`                | E2E テスト (Playwright、初回は `bunx playwright install chromium`)          |
+| `bun run db:generate`             | スキーマからマイグレーションを生成                                          |
+| `bun run db:migrate`              | マイグレーションを適用                                                      |
+| `bun run db:studio`               | Drizzle Studio を起動                                                       |
+| `bun run auth:generate`           | Better Auth の設定から `src/modules/auth/infrastructure/schema.ts` を再生成 |
 
 ## アーキテクチャ
 
@@ -68,7 +68,7 @@ src/
 │   ├── infrastructure/         DB クライアント
 │   └── presentation/           shadcn/ui
 ├── env.ts                      型付きの環境変数
-└── proxy.ts                    未ログイン時に /dashboard からリダイレクト（楽観的チェック）
+└── proxy.ts                    未ログイン時に /boards からリダイレクト（楽観的チェック）
 e2e/                            Playwright のテスト
 drizzle/                        生成されたマイグレーション
 ```
@@ -77,14 +77,14 @@ drizzle/                        生成されたマイグレーション
 
 依存は外側から内側への一方向だけです。ルールは `.dependency-cruiser.cjs` に定義していて、`bun run lint` と CI で違反をチェックします。
 
-| レイヤー | 依存してよいもの |
-| --- | --- |
-| domain | domain のみ（外部パッケージも不可） |
-| application | domain / application のみ（外部パッケージも不可） |
-| infrastructure | domain / application / 外部パッケージ / `env.ts` |
-| presentation | domain / application / di（infrastructure は不可） |
-| di | presentation と app 以外すべて |
-| app | presentation / di / domain の型 |
+| レイヤー       | 依存してよいもの                                   |
+| -------------- | -------------------------------------------------- |
+| domain         | domain のみ（外部パッケージも不可）                |
+| application    | domain / application のみ（外部パッケージも不可）  |
+| infrastructure | domain / application / 外部パッケージ / `env.ts`   |
+| presentation   | domain / application / di（infrastructure は不可） |
+| di             | presentation と app 以外すべて                     |
+| app            | presentation / di / domain の型                    |
 
 認証の本チェックは各ページで `getSession()` を使って行います。`proxy.ts` は Cookie の有無だけを見る軽いチェックです。
 
