@@ -42,12 +42,17 @@ export function makeInMemoryBoardRepository() {
     return boards.find((board) => board.id === boardId) ?? null;
   }
 
-  async function findFirstByUserId(userId: string): Promise<Board | null> {
-    const [first] = members
+  async function findAllByUserId(userId: string): Promise<Board[]> {
+    const sortedMembers = members
       .filter((member) => member.userId === userId)
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    if (!first) return null;
-    return findById(first.boardId);
+
+    const result: Board[] = [];
+    for (const member of sortedMembers) {
+      const board = boards.find((board) => board.id === member.boardId);
+      if (board) result.push(board);
+    }
+    return result;
   }
 
   async function findMember(
@@ -66,7 +71,7 @@ export function makeInMemoryBoardRepository() {
     addMember,
     addInviteToken,
     findById,
-    findFirstByUserId,
+    findAllByUserId,
     findMember,
   };
 
