@@ -22,6 +22,6 @@ export interface BoardRepository {
   addMember(data: AddMemberData): Promise<void>;
   addInviteToken(data: AddInviteTokenData): Promise<void>;
   findById(boardId: string): Promise<Board | null>;
-  findFirstByUserId(userId: string): Promise<Board | null>;
+  findAllByUserId(userId: string): Promise<Board[]>;
   findMember(boardId: string, userId: string): Promise<BoardMember | null>;
 }
