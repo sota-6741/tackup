@@ -22,7 +22,7 @@ export interface BoardRepository {
   addMember(data: AddMemberData): Promise<void>;
   addInviteToken(data: AddInviteTokenData): Promise<void>;
   findById(boardId: string): Promise<Board | null>;
-  /** 掲示板を作った順ではなく、所属した日時（BoardMember.createdAt）の古い順に返す。 */
+  /** 掲示板を作った順ではなく、所属した日時（BoardMember.createdAt）の新しい順に返す。 */
   findAllByUserId(userId: string): Promise<Board[]>;
   findMember(boardId: string, userId: string): Promise<BoardMember | null>;
 }
