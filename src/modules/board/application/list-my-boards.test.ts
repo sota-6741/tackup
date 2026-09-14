@@ -8,7 +8,7 @@ function setup() {
   return { listMyBoards, repository, members };
 }
 
-test("所属する掲示板を、所属した日時の古い順に返す", async () => {
+test("所属する掲示板を、所属した日時の新しい順に返す", async () => {
   const { listMyBoards, repository, members } = setup();
   const boardA = await repository.create({ name: "A", isPublic: false });
   const boardB = await repository.create({ name: "B", isPublic: false });
@@ -29,7 +29,7 @@ test("所属する掲示板を、所属した日時の古い順に返す", async
 
   const boards = await listMyBoards("user-1");
 
-  expect(boards).toEqual([boardB, boardA]);
+  expect(boards).toEqual([boardA, boardB]);
 });
 
 test("所属していない掲示板は含まれない", async () => {
