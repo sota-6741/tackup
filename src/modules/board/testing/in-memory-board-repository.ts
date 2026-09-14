@@ -45,7 +45,7 @@ export function makeInMemoryBoardRepository() {
   async function findAllByUserId(userId: string): Promise<Board[]> {
     const sortedMembers = members
       .filter((member) => member.userId === userId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     const result: Board[] = [];
     for (const member of sortedMembers) {
