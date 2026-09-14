@@ -27,3 +27,4 @@ src/shared/{domain,infrastructure,presentation}/ cross-feature code (shadcn/ui l
 - Test domain and application with the in-memory repository in `modules/<feature>/testing/`.
 - Table files (`infrastructure/schema.ts`) are loaded by drizzle-kit: use relative imports there, not `@/`.
 - Add a `/** JSDoc */` comment only when behavior, reasons, or caveats are not obvious from the name and types. Do not restate names, do not write types in `@param`/`@returns`, write it in Japanese, and put it on the interface when the rule is part of an interface contract.
+- Receive object parameters by destructuring them in the signature (one level of shorthand properties only). When passing values on to another function, list the properties explicitly instead of spreading; use spread only to carry over a whole object. Keep a parameter named when the function treats it as one thing (e.g. `hasRole(member, roles)`).
