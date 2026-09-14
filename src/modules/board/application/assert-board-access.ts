@@ -11,6 +11,10 @@ export type AssertBoardAccessInput = {
   roles: readonly Role[];
 };
 
+/**
+ * 掲示板に所属していない場合は、掲示板の存在を知られないよう ForbiddenError ではなく NotFoundError を投げる。
+ * 存在しない掲示板の場合も同じく NotFoundError になる。
+ */
 export function makeAssertBoardAccess({ boardRepository }: Deps) {
   return async function assertBoardAccess(
     input: AssertBoardAccessInput,
