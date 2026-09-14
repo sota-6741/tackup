@@ -79,7 +79,7 @@ test("同じユーザーを同じ掲示板に2回追加するとエラーにな�
   await expect(repository.addMember(member)).rejects.toThrow();
 });
 
-test("所属する掲示板を、所属した日時の古い順に返す", async () => {
+test("所属する掲示板を、所属した日時の新しい順に返す", async () => {
   await insertUser("user-1");
   const boardA = await repository.create({ name: "A", isPublic: false });
   const boardB = await repository.create({ name: "B", isPublic: false });
@@ -100,7 +100,7 @@ test("所属する掲示板を、所属した日時の古い順に返す", async
 
   const boards = await repository.findAllByUserId("user-1");
 
-  expect(boards.map((board) => board.name)).toEqual(["B", "A"]);
+  expect(boards.map((board) => board.name)).toEqual(["A", "B"]);
 });
 
 test("所属する掲示板がなければ空の配列を返す", async () => {
