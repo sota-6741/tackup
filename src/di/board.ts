@@ -1,5 +1,6 @@
 import { makeAssertBoardAccess } from "@/modules/board/application/assert-board-access";
 import { makeCreateBoard } from "@/modules/board/application/create-board";
+import { makeFindLandingBoard } from "@/modules/board/application/find-landing-board";
 import { makeGetBoard } from "@/modules/board/application/get-board";
 import { makeListMyBoards } from "@/modules/board/application/list-my-boards";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
@@ -18,5 +19,7 @@ const assertBoardAccess = makeAssertBoardAccess({ boardRepository });
 export const createBoard = makeCreateBoard({ unitOfWork, generateInviteToken });
 
 export const listMyBoards = makeListMyBoards({ boardRepository });
+
+export const findLandingBoard = makeFindLandingBoard({ boardRepository });
 
 export const getBoard = makeGetBoard({ boardRepository, assertBoardAccess });
