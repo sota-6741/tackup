@@ -35,6 +35,7 @@ jobs:
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run test
+      - run: bun run test:db
       - run: bun run db:migrate
       - run: bun run build
       - run: bunx playwright install --with-deps chromium
