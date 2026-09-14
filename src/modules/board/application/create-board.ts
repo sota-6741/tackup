@@ -15,17 +15,21 @@ type Deps = {
 };
 
 export function makeCreateBoard({ unitOfWork, generateInviteToken }: Deps) {
-  return async function createBoard(input: CreateBoardInput): Promise<Board> {
-    const name = parseBoardName(input.name);
+  return async function createBoard({
+    name,
+    isPublic,
+    userId,
+  }: CreateBoardInput): Promise<Board> {
+    const boardName = parseBoardName(name);
 
     return unitOfWork.run(async ({ boardRepository }) => {
       const board = await boardRepository.create({
-        name,
-        isPublic: input.isPublic,
+        name: boardName,
+        isPublic,
       });
       await boardRepository.addMember({
         boardId: board.id,
-        userId: input.userId,
+        userId,
         role: "admin",
       });
       await boardRepository.addInviteToken({
