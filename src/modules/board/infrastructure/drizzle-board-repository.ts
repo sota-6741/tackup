@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { Board } from "@/modules/board/domain/board";
 import type { BoardMember } from "@/modules/board/domain/board-member";
 import type {
@@ -44,7 +44,7 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
       .from(boardMember)
       .innerJoin(board, eq(board.id, boardMember.boardId))
       .where(eq(boardMember.userId, userId))
-      .orderBy(asc(boardMember.createdAt));
+      .orderBy(desc(boardMember.createdAt));
     return rows.map((row) => row.board);
   }
 
