@@ -38,7 +38,8 @@ bun run dev
 | `bun run build` / `bun run start` | 本番ビルド / 本番サーバーを起動                                             |
 | `bun run lint` / `bun run format` | Biome と依存ルールのチェック / Biome で自動修正                             |
 | `bun run typecheck`               | 型チェック                                                                  |
-| `bun run test`                    | ユニットテスト (Vitest)                                                     |
+| `bun run test`                    | ユニットテスト (Vitest、DB を使わない)                                      |
+| `bun run test:db`                 | DB を使うテスト (Vitest、PostgreSQL の起動が必要)                           |
 | `bun run test:e2e`                | E2E テスト (Playwright、初回は `bunx playwright install chromium`)          |
 | `bun run db:generate`             | スキーマからマイグレーションを生成                                          |
 | `bun run db:migrate`              | マイグレーションを適用                                                      |
@@ -94,7 +95,7 @@ drizzle/                        生成されたマイグレーション
 
 1. `domain/`：エンティティ、値オブジェクト、Repository のインターフェース
 2. `application/`：`makeXxx({ repository })` の形でユースケースを書き、`testing/` のインメモリ Repository でテストする
-3. `infrastructure/`：`schema.ts` にテーブルを書き（import は相対パス）、Repository を実装する → `bun run db:generate` → `bun run db:migrate`
+3. `infrastructure/`：`schema.ts` にテーブルを書き（import は相対パス）、Repository を実装する → `bun run db:generate` → `bun run db:migrate`。Repository は `*.db.test.ts` で実際の PostgreSQL に対してテストする（`bun run test:db`）
 4. `src/di/<feature>.ts`：Repository を注入してユースケースを組み立てる
 5. `presentation/`：Server Actions とコンポーネントから `@/di/<feature>` を呼ぶ
 
