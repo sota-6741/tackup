@@ -16,17 +16,16 @@ export type AssertBoardAccessInput = {
  * 存在しない掲示板の場合も同じく NotFoundError になる。
  */
 export function makeAssertBoardAccess({ boardRepository }: Deps) {
-  return async function assertBoardAccess(
-    input: AssertBoardAccessInput,
-  ): Promise<void> {
-    const member = await boardRepository.findMember(
-      input.boardId,
-      input.userId,
-    );
+  return async function assertBoardAccess({
+    boardId,
+    userId,
+    roles,
+  }: AssertBoardAccessInput): Promise<void> {
+    const member = await boardRepository.findMember(boardId, userId);
     if (!member) {
       throw new NotFoundError("掲示板が見つかりません");
     }
-    if (!hasRole(member, input.roles)) {
+    if (!hasRole(member, roles)) {
       throw new ForbiddenError("この操作を行う権限がありません");
     }
   };
