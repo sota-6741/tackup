@@ -10,3 +10,7 @@ if (process.env.NODE_ENV !== "production") globalForDb.client = client;
 export const db = drizzle(client);
 
 export type Db = typeof db;
+
+type Transaction = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+export type DbExecutor = Db | Transaction;
