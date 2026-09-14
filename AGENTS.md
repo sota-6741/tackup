@@ -25,6 +25,7 @@ src/shared/{domain,infrastructure,presentation}/ cross-feature code (shadcn/ui l
 - Read `@/env` only in infrastructure.
 - Throw `DomainError` subclasses for expected failures; Server Actions turn them into `{ error }` state.
 - Test domain and application with the in-memory repository in `modules/<feature>/testing/`.
+- Test infrastructure against PostgreSQL in `*.db.test.ts` files (`bun run test:db`, uses `testDb` from `@/shared/testing/test-db`; tables are truncated before each test). `bun run test` stays DB-free.
 - Table files (`infrastructure/schema.ts`) are loaded by drizzle-kit: use relative imports there, not `@/`.
 - Add a `/** JSDoc */` comment only when behavior, reasons, or caveats are not obvious from the name and types. Do not restate names, do not write types in `@param`/`@returns`, write it in Japanese, and put it on the interface when the rule is part of an interface contract.
 - Receive object parameters by destructuring them in the signature (one level of shorthand properties only). When passing values on to another function, list the properties explicitly instead of spreading; use spread only to carry over a whole object. Keep a parameter named when the function treats it as one thing (e.g. `hasRole(member, roles)`).
