@@ -27,5 +27,12 @@ src/shared/{domain,infrastructure,presentation}/ cross-feature code (shadcn/ui l
 - Test domain and application with the in-memory repository in `modules/<feature>/testing/`.
 - Test infrastructure against PostgreSQL in `*.db.test.ts` files (`bun run test:db`, uses `testDb` from `@/shared/testing/test-db`; tables are truncated before each test). `bun run test` stays DB-free.
 - Table files (`infrastructure/schema.ts`) are loaded by drizzle-kit: use relative imports there, not `@/`.
+
+# UI: shadcn/ui on Base UI
+
+- UI uses shadcn/ui with the `base-nova` style, which is built on Base UI (`@base-ui/react`), not Radix. Add components with `bunx shadcn@latest add <name>`; they are generated into `src/shared/presentation/components/ui`.
+- Base UI composes elements with the `render` prop, not Radix's `asChild` (e.g. `<Button render={<Link href="/boards/new" />}>`). Most shadcn/ui examples online are for Radix: read `node_modules/@base-ui/react/docs/` before writing UI code.
+- Merge class names with `cn` from `@/shared/presentation/lib/utils`.
+- Keep `components/ui` generic. Feature-specific UI (sidebars, forms) lives in `src/modules/<feature>/presentation` and composes the `ui` components.
 - Add a `/** JSDoc */` comment only when behavior, reasons, or caveats are not obvious from the name and types. Do not restate names, do not write types in `@param`/`@returns`, write it in Japanese, and put it on the interface when the rule is part of an interface contract.
 - Receive object parameters by destructuring them in the signature (one level of shorthand properties only). When passing values on to another function, list the properties explicitly instead of spreading; use spread only to carry over a whole object. Keep a parameter named when the function treats it as one thing (e.g. `hasRole(member, roles)`).
