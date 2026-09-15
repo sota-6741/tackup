@@ -46,4 +46,6 @@ yarn-error.log*
 next-env.d.ts
 
 # claude code
-/.claude/
+/.claude/notes/
+/.claude/settings.local.json
+CLAUDE.local.md
