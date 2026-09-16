@@ -1,8 +1,10 @@
 import { LockIcon, PlusIcon } from "lucide-react";
+import { AccountMenu } from "@/modules/auth/presentation/account-menu";
 import type { Board } from "@/modules/board/domain/board";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -13,9 +15,14 @@ import { SidebarNavLink } from "./sidebar-nav-link";
 
 type BoardSidebarProps = {
   boards: Board[];
+  user: {
+    name: string;
+    email: string;
+    image: string | null;
+  };
 };
 
-export function BoardSidebar({ boards }: BoardSidebarProps) {
+export function BoardSidebar({ boards, user }: BoardSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader>
@@ -55,6 +62,9 @@ export function BoardSidebar({ boards }: BoardSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <AccountMenu name={user.name} email={user.email} image={user.image} />
+      </SidebarFooter>
     </Sidebar>
   );
 }
