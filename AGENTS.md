@@ -8,6 +8,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+# Commands
+
+- Before finishing a change, run `bun run check` (typecheck, lint, unit tests). Also run `bun run test:db` (or `bun run check:all`) when infrastructure or the database changed. Start PostgreSQL with `bun run db:up`.
+
 # Product docs
 
 - Read `docs/requirements.md` before implementing a feature, and `docs/screens.md` for screen specs. They are the source of truth; update them when a decision changes.
