@@ -18,7 +18,14 @@ export default async function BoardsLayout({
 
   return (
     <SidebarProvider>
-      <BoardSidebar boards={boards} />
+      <BoardSidebar
+        boards={boards}
+        user={{
+          name: session.user.name,
+          email: session.user.email,
+          image: session.user.image ?? null,
+        }}
+      />
       <SidebarInset>
         <header className="flex h-14 items-center gap-2 border-b px-3 md:hidden">
           <SidebarTrigger />
