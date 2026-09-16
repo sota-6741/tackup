@@ -19,7 +19,7 @@ Next.js のテンプレートです。
 ```bash
 bun install
 cp .env.example .env       # 値を埋める（BETTER_AUTH_SECRET は openssl rand -base64 32）
-docker compose up -d       # PostgreSQL を起動
+bun run db:up              # PostgreSQL を起動
 bun run db:migrate         # マイグレーションを適用
 bun run dev
 ```
@@ -36,11 +36,14 @@ bun run dev
 | --------------------------------- | --------------------------------------------------------------------------- |
 | `bun run dev`                     | 開発サーバーを起動                                                          |
 | `bun run build` / `bun run start` | 本番ビルド / 本番サーバーを起動                                             |
+| `bun run check`                   | 型チェック・lint・ユニットテストをまとめて実行（変更のたびに）              |
+| `bun run check:all`               | `check` に加えて DB を使うテストも実行（DB を触ったとき、コミット前）       |
 | `bun run lint` / `bun run format` | Biome と依存ルールのチェック / Biome で自動修正                             |
 | `bun run typecheck`               | 型チェック                                                                  |
 | `bun run test`                    | ユニットテスト (Vitest、DB を使わない)                                      |
 | `bun run test:db`                 | DB を使うテスト (Vitest、PostgreSQL の起動が必要)                           |
 | `bun run test:e2e`                | E2E テスト (Playwright、初回は `bunx playwright install chromium`)          |
+| `bun run db:up`                   | PostgreSQL を起動 (Docker)                                                  |
 | `bun run db:generate`             | スキーマからマイグレーションを生成                                          |
 | `bun run db:migrate`              | マイグレーションを適用                                                      |
 | `bun run db:studio`               | Drizzle Studio を起動                                                       |
@@ -90,6 +93,18 @@ drizzle/                        生成されたマイグレーション
 認証の本チェックは各ページで `getSession()` を使って行います。`proxy.ts` は Cookie の有無だけを見る軽いチェックです。
 
 ## 開発の流れ
+
+### 日々の作業
+
+```bash
+bun run db:up        # PostgreSQL を起動（開発を始めるとき）
+bun run dev          # 開発サーバーを起動
+bun run format       # 書いたコードを整形
+bun run check        # 型チェック・lint・ユニットテスト（変更のたびに）
+bun run check:all    # DB を使うテストも含めて実行（DB を触ったとき、コミットの前）
+```
+
+`check` は途中で失敗するとそこで止まります。`format` はファイルを書き換えるので `check` には含めていません。
 
 ### 機能（モジュール）の追加
 
