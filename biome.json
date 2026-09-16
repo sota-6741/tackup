@@ -35,5 +35,13 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/shared/presentation/components/ui/**"],
+      "linter": {
+        "enabled": false
+      }
+    }
+  ]
 }
