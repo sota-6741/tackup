@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { connection } from "next/server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,7 +18,10 @@ export const metadata: Metadata = {
   description: "Next.js + Drizzle + Better Auth template",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+/** CSP の nonce はリクエストごとに作るので、すべてのページをリクエストのたびに描画する（ビルド時に作った静的なページには nonce が付かない）。 */
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  await connection();
+
   return (
     <html
       lang="ja"
