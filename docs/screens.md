@@ -140,8 +140,8 @@ md 以上                                  md 未満
 ```
 src/app/boards/layout.tsx                    [Server] getSession、listMyBoards
 └ BoardSidebar                               [Server] modules/board/presentation
-   ├ BoardSidebarLink（現在地の強調）          [Client] usePathname
-   ├ 「掲示板を作成」リンク                    ui/button（render={<Link />}）
+   ├ SidebarNavLink（現在地の強調）            [Client] usePathname
+   ├ 「掲示板を作成」リンク                    SidebarNavLink
    └ AccountMenu                              [Client] modules/auth/presentation（ログアウトを含む）
 ```
 
@@ -224,7 +224,7 @@ src/app/boards/new/page.tsx                  [Server] 見出しと CreateBoardFo
 
 | 領域 | 内容 | データ |
 | -- | -- | -- |
-| ヘッダー | 掲示板名（`h1`）と、公開 / 非公開のバッジ（`ui/badge`） | `getBoard({ boardId, userId })` |
+| ヘッダー | 掲示板名（`h1`）と、公開 / 非公開のバッジ（`ui/badge`。公開は地球、非公開は鍵のアイコン付き） | `getBoard({ boardId, userId })` |
 | 本文 | ステップ1では「まだ掲示物はありません」 | 固定 |
 
 ### ヘッダーの導線（追加する時期）
@@ -242,6 +242,7 @@ src/app/boards/new/page.tsx                  [Server] 見出しと CreateBoardFo
 - 画面が表示されたら、Cookie `last-board-id` にこの掲示板の ID を保存する。
 - 属性：`path=/`、`max-age` 1年、`SameSite=Lax`。
 - ブラウザで書き込む（Server Component では Cookie を書けないため）。サイドバーのリンクの先読みでは記録されない。
+- 書き込みには Cookie Store API（`cookieStore.set`）を使う。安全な接続（HTTPS か `localhost`）でしか使えないので、開発中にスマホから `http://192.168...` で開いたときは記録しない。
 
 ### 状態
 
@@ -266,6 +267,12 @@ src/app/boards/[boardId]/page.tsx            [Server] getBoard。NotFoundError �
 | 文言 | 「ページが見つかりません」「URL が間違っているか、閲覧する権限がありません。」 |
 | 導線 | ログイン中なら「掲示板へ戻る」→ `/boards`、未ログインなら「トップへ」→ `/` |
 | 注意 | 掲示板が存在するのか、所属していないだけなのかは区別して見せない |
+| 部品 | 文言とリンクは `NotFoundMessage`（`src/shared/presentation/components`）にまとめる |
+
+| ファイル | 出る場面 | 見え方 |
+| -- | -- | -- |
+| `src/app/boards/not-found.tsx` | `/boards` 配下のページが `notFound()` を呼んだとき（掲示板が見つからない・所属していない） | サイドバーの中に表示する。リンクは「掲示板へ戻る」 |
+| `src/app/not-found.tsx` | どのページにも当てはまらない URL | サイドバーなし。ログイン中なら「掲示板へ戻る」、未ログインなら「トップへ」 |
 
 ---
 
