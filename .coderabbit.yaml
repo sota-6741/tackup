@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: ja-JP
+reviews:
+  profile: chill
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!src/shared/presentation/components/ui/**"
+    - "!drizzle/meta/**"
+    - "!bun.lock"
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: warning
+      requirements: "「prefix: 日本語の説明」の形にする（prefix は feat・fix・refactor・test・docs・chore のいずれか）。マージコミットの件名になる。"
