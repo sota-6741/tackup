@@ -17,3 +17,25 @@ test("レスポンスにセキュリティ用のヘッダーが付き、Next.js 
   );
   expect(headers["x-powered-by"]).toBeUndefined();
 });
+
+test("CSP で、nonce の付いたスクリプトだけを動かし、違反なく画面を表示する", async ({
+  page,
+}) => {
+  const violations: string[] = [];
+  page.on("console", (message) => {
+    if (message.text().includes("Content Security Policy")) {
+      violations.push(message.text());
+    }
+  });
+
+  const response = await page.goto("/sign-in");
+  await page.waitForLoadState("networkidle");
+
+  const policy = response?.headers()["content-security-policy"] ?? "";
+  expect(policy).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
+  expect(policy).toContain("frame-ancestors 'none'");
+  await expect(
+    page.getByRole("button", { name: "Google でサインイン" }),
+  ).toBeVisible();
+  expect(violations).toEqual([]);
+});
