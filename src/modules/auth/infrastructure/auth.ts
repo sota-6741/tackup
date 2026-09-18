@@ -16,6 +16,7 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET,
     },
   },
+  account: { encryptOAuthTokens: true },
   logger: { log: logAuthEvent },
   rateLimit: { storage: "database" },
   plugins: [nextCookies()],
