@@ -50,5 +50,5 @@ src/shared/{domain,infrastructure,presentation}/ cross-feature code (shadcn/ui l
 # Workflow: pull requests
 
 - `main` is protected by a ruleset: no direct pushes. Work on a branch, open a PR, and merge it with a merge commit (the only allowed method) after the `check` CI job passes and every review thread is resolved. Merged branches are deleted automatically.
-- CodeRabbit (`.coderabbit.yaml`) and GitHub Copilot (`.github/copilot-instructions.md`) review each PR automatically. Handle every comment by fixing it or replying with the reason not to, then resolve the thread.
+- CodeRabbit (`.coderabbit.yaml`) and GitHub Copilot (`.github/copilot-instructions.md`) review each PR automatically. For bot comments, decide whether to fix each one, then resolve the thread without replying to the bot. For human review comments, fix or reply with the reason not to, then resolve the thread.
 - Write PR titles as `prefix: 日本語の説明` (`feat`, `fix`, `refactor`, `test`, `docs`, `chore`); the title becomes the merge commit subject.
