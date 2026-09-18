@@ -15,6 +15,13 @@
       "when": 1789319461056,
       "tag": "0001_fluffy_lady_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789735511631,
+      "tag": "0002_silky_centennial",
+      "breakpoints": true
     }
   ]
 }
