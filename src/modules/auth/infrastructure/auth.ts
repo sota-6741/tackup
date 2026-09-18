@@ -5,6 +5,7 @@ import { env } from "@/env";
 import { db } from "@/shared/infrastructure/db";
 import { logAuthEvent } from "./auth-logger";
 import * as schema from "./schema";
+import { withoutOAuthTokens } from "./without-oauth-tokens";
 
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
@@ -16,6 +17,7 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET,
     },
   },
+  databaseHooks: withoutOAuthTokens,
   logger: { log: logAuthEvent },
   rateLimit: { storage: "database" },
   plugins: [nextCookies()],
