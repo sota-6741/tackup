@@ -7,6 +7,7 @@ import type {
   BoardRepository,
   CreateBoardData,
 } from "@/modules/board/domain/board-repository";
+import { withSafeDatabaseErrors } from "@/shared/infrastructure/database-error";
 import type { DbExecutor } from "@/shared/infrastructure/db";
 import { board, boardMember, inviteToken } from "./schema";
 
@@ -62,12 +63,12 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     return found ?? null;
   }
 
-  return {
+  return withSafeDatabaseErrors({
     create,
     addMember,
     addInviteToken,
     findById,
     findAllByUserId,
     findMember,
-  };
+  });
 }
