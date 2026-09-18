@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { user } from "@/modules/auth/infrastructure/schema";
+import { DatabaseError } from "@/shared/infrastructure/database-error";
 import { testDb } from "@/shared/testing/test-db";
 import { makeDrizzleBoardRepository } from "./drizzle-board-repository";
 import { boardMember, inviteToken } from "./schema";
@@ -77,6 +78,20 @@ test("同じユーザーを同じ掲示板に2回追加するとエラーにな�
   await repository.addMember(member);
 
   await expect(repository.addMember(member)).rejects.toThrow();
+});
+
+test("DB のエラーは、SQL の値を含まない DatabaseError になる", async () => {
+  const member = {
+    boardId: "00000000-0000-4000-8000-000000000000",
+    userId: "secret-user-id",
+    role: "admin",
+  } as const;
+
+  const error = await repository.addMember(member).catch((error) => error);
+
+  expect(error).toBeInstanceOf(DatabaseError);
+  expect(error.code).toBe("23503");
+  expect(error.message).not.toContain("secret-user-id");
 });
 
 test("所属する掲示板を、所属した日時の新しい順に返す", async () => {
