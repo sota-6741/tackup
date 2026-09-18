@@ -5,14 +5,7 @@ import { env } from "@/env";
 import { db } from "@/shared/infrastructure/db";
 import { logAuthEvent } from "./auth-logger";
 import * as schema from "./schema";
-
-const WITHOUT_OAUTH_TOKENS = {
-  accessToken: null,
-  refreshToken: null,
-  idToken: null,
-  accessTokenExpiresAt: null,
-  refreshTokenExpiresAt: null,
-};
+import { withoutOAuthTokens } from "./without-oauth-tokens";
 
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
@@ -24,20 +17,7 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET,
     },
   },
-  databaseHooks: {
-    account: {
-      create: {
-        before: async (account) => ({
-          data: { ...account, ...WITHOUT_OAUTH_TOKENS },
-        }),
-      },
-      update: {
-        before: async (account) => ({
-          data: { ...account, ...WITHOUT_OAUTH_TOKENS },
-        }),
-      },
-    },
-  },
+  databaseHooks: withoutOAuthTokens,
   logger: { log: logAuthEvent },
   rateLimit: { storage: "database" },
   plugins: [nextCookies()],
