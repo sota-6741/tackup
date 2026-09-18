@@ -30,6 +30,12 @@ bun run dev
 
 - 承認済みのリダイレクト URI: `http://localhost:3000/api/auth/callback/google`
 
+## 本番に出すとき
+
+- **回数制限に使う IP のヘッダー**：Better Auth のログインの回数制限（本番だけ有効、記録は DB の `rate_limit` テーブル）は、`X-Forwarded-For` からクライアントの IP を取る。ホスティングによって信頼できるヘッダーが違うので、`src/modules/auth/infrastructure/auth.ts` の `advanced.ipAddress`（`ipAddressHeaders` または `trustedProxies`）を合わせて設定する。IP が取れないと、全員が1つの枠を共有してしまう。
+- **HSTS**：`Strict-Transport-Security` に `includeSubDomains` を付けているので、公開するドメインのサブドメインもすべて HTTPS で配信する。
+- **Google OAuth**：承認済みのリダイレクト URI に `https://<本番のドメイン>/api/auth/callback/google` を追加する。
+
 ## スクリプト
 
 | コマンド                          | 内容                                                                        |
@@ -110,7 +116,7 @@ bun run check:all    # DB を使うテストも含めて実行（DB を触った
 
 1. `domain/`：エンティティ、値オブジェクト、Repository のインターフェース
 2. `application/`：`makeXxx({ repository })` の形でユースケースを書き、`testing/` のインメモリ Repository でテストする
-3. `infrastructure/`：`schema.ts` にテーブルを書き（import は相対パス）、Repository を実装する → `bun run db:generate` → `bun run db:migrate`。Repository は `*.db.test.ts` で実際の PostgreSQL に対してテストする（`bun run test:db`）
+3. `infrastructure/`：`schema.ts` にテーブルを書き（import は相対パス）、Repository を実装する → `bun run db:generate` → `bun run db:migrate`。Repository は `return withSafeDatabaseErrors({ ... })` で包み、ログに SQL の値が出ないようにする。`*.db.test.ts` で実際の PostgreSQL に対してテストする（`bun run test:db`）
 4. `src/di/<feature>.ts`：Repository を注入してユースケースを組み立てる
 5. `presentation/`：Server Actions とコンポーネントから `@/di/<feature>` を呼ぶ
 
