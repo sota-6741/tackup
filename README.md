@@ -33,6 +33,7 @@ bun run dev
 ## 本番に出すとき
 
 - **回数制限に使う IP のヘッダー**：Better Auth のログインの回数制限（本番だけ有効、記録は DB の `rate_limit` テーブル）は、`X-Forwarded-For` からクライアントの IP を取る。ホスティングによって信頼できるヘッダーが違うので、`src/modules/auth/infrastructure/auth.ts` の `advanced.ipAddress`（`ipAddressHeaders` または `trustedProxies`）を合わせて設定する。IP が取れないと、全員が1つの枠を共有してしまう。
+- **DB への接続の暗号化**：本番の `DATABASE_URL` には `?sslmode=require` を付け、DB との通信を暗号化する。
 - **HSTS**：`Strict-Transport-Security` に `includeSubDomains` を付けているので、公開するドメインのサブドメインもすべて HTTPS で配信する。
 - **Google OAuth**：承認済みのリダイレクト URI に `https://<本番のドメイン>/api/auth/callback/google` を追加する。
 
