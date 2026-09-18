@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { env } from "@/env";
 import { db } from "@/shared/infrastructure/db";
+import { logAuthEvent } from "./auth-logger";
 import * as schema from "./schema";
 
 export const auth = betterAuth({
@@ -15,5 +16,6 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET,
     },
   },
+  logger: { log: logAuthEvent },
   plugins: [nextCookies()],
 });
