@@ -26,8 +26,16 @@ export const auth = betterAuth({
   },
   databaseHooks: {
     account: {
-      create: { before: async () => ({ data: WITHOUT_OAUTH_TOKENS }) },
-      update: { before: async () => ({ data: WITHOUT_OAUTH_TOKENS }) },
+      create: {
+        before: async (account) => ({
+          data: { ...account, ...WITHOUT_OAUTH_TOKENS },
+        }),
+      },
+      update: {
+        before: async (account) => ({
+          data: { ...account, ...WITHOUT_OAUTH_TOKENS },
+        }),
+      },
     },
   },
   logger: { log: logAuthEvent },
