@@ -17,5 +17,6 @@ export const auth = betterAuth({
     },
   },
   logger: { log: logAuthEvent },
+  rateLimit: { storage: "database" },
   plugins: [nextCookies()],
 });
