@@ -41,6 +41,7 @@ bun run dev
 - **ファイルの保存先（Cloud Storage）**：
   - バケットは「均一なバケットレベルのアクセス」と「公開アクセスの防止」を有効にして作る（ファイルは署名付き URL でだけ取得する）。
   - `STORAGE_BUCKET` にバケット名を設定する。`STORAGE_API_ENDPOINT` と `GOOGLE_APPLICATION_CREDENTIALS` は**設定しない**（Cloud Run のサービスアカウントで署名する）。
+  - プロジェクトで IAM Service Account Credentials API（`iamcredentials.googleapis.com`）を有効にする。鍵ファイルなしの署名はこの API を使うので、無効だと署名付き URL の発行が実行時に失敗する。
   - アプリのサービスアカウントに付ける権限は2つだけ。
     - そのバケットへの `roles/storage.objectUser`
     - **自分自身**への `roles/iam.serviceAccountTokenCreator`（鍵ファイルなしで署名するために必要）
