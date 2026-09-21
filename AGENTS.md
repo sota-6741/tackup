@@ -33,6 +33,7 @@ src/shared/{domain,infrastructure,presentation}/ cross-feature code (shadcn/ui l
 - Read `@/env` only in infrastructure.
 - Throw `DomainError` subclasses for expected failures; Server Actions turn them into `{ error }` state.
 - Test domain and application with the in-memory repository in `modules/<feature>/testing/`.
+- Test helpers live in a `testing/` folder; dev-only tooling lives in `scripts/`. Production code must not import either — `bun run lint` enforces this (`no-testing-code-in-app`, `no-scripts-in-app`).
 - Test infrastructure against PostgreSQL in `*.db.test.ts` files (`bun run test:db`, uses `testDb` from `@/shared/testing/test-db`; tables are truncated before each test). `bun run test` stays DB-free.
 - Storage code uses `@google-cloud/storage`. Test it in two layers: `*.storage.test.ts` runs against the local emulator (`bun run test:storage`, uses `testStorageClient` from `@/shared/testing/test-storage`) and covers the happy path and the signed URL contents; `*.gcs.test.ts` runs in CI against a real dev bucket (`bun run test:gcs`, needs `GCS_TEST_BUCKET` and GCP credentials) and covers what the emulator cannot check — it does not verify signatures, so rejection of wrong size/type, expired URLs and unsigned reads must be tested there.
 - Table files (`infrastructure/schema.ts`) are loaded by drizzle-kit: use relative imports there, not `@/`.
