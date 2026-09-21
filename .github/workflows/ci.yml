@@ -47,7 +47,7 @@ jobs:
 
   gcs:
     runs-on: ubuntu-latest
-    if: ${{ vars.GCS_TEST_BUCKET != '' && github.event.pull_request.head.repo.fork != true }}
+    if: ${{ vars.GCS_TEST_BUCKET != '' && vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && vars.GCP_SERVICE_ACCOUNT != '' && github.event.pull_request.head.repo.fork != true }}
     permissions:
       contents: read
       id-token: write
