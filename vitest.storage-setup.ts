@@ -1,3 +1,3 @@
-import { ensureDevSigningKey } from "./src/shared/testing/dev-signing-key";
+import { ensureDevSigningKey } from "./scripts/dev-signing-key";
 
 ensureDevSigningKey();
