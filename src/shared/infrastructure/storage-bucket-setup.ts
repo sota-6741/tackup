@@ -1,7 +1,7 @@
 import type { Storage } from "@google-cloud/storage";
 import { CONTENT_LENGTH_RANGE_HEADER } from "./gcs-file-storage";
 
-/** ローカルのエミュレーターと CI 用。本番のバケットと CORS は gcloud で設定する（README）。 */
+/** ローカルのエミュレーター専用（`bun run storage:setup` とストレージのテスト）。本番と CI の実バケットは、公開アクセスの防止などを含めて gcloud で作る（README）。 */
 export async function setUpBucket({
   storage,
   bucket,
