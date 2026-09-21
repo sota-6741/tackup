@@ -8,6 +8,8 @@ export const env = createEnv({
     BETTER_AUTH_URL: z.url(),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
+    STORAGE_BUCKET: z.string().min(1),
+    STORAGE_API_ENDPOINT: z.url().optional(),
   },
   client: {},
   experimental__runtimeEnv: {},
