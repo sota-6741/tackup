@@ -1,15 +1,15 @@
 import { generateKeyPairSync } from "node:crypto";
 import { existsSync, writeFileSync } from "node:fs";
 
-const DEFAULT_KEY_PATH = "./.gcs-dev-key.json";
+const DEV_KEY_PATH = "./.gcs-dev-key.json";
 
 /**
  * ローカルとテストで署名付き URL を作るための、使い捨ての鍵を用意する。
  * エミュレーターは署名を検証しないので、この鍵に価値はない。本番は鍵を持たず、Cloud Run のサービスアカウントで署名する。
+ * 環境変数に本物の認証情報が入っていても、この鍵で上書きする（エミュレーター相手の処理が、本物の認証情報で署名しないようにするため）。
  */
 export function ensureDevSigningKey(): string {
-  const keyPath =
-    process.env.GOOGLE_APPLICATION_CREDENTIALS ?? DEFAULT_KEY_PATH;
+  const keyPath = DEV_KEY_PATH;
   process.env.GOOGLE_APPLICATION_CREDENTIALS = keyPath;
   if (existsSync(keyPath)) return keyPath;
 
