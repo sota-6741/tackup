@@ -21,7 +21,7 @@ services:
     ports:
       - "127.0.0.1:4443:4443"
     volumes:
-      - storage-data:/storage
+      - gcs-data:/storage
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:4443/storage/v1/b"]
       interval: 2s
@@ -30,4 +30,4 @@ services:
 
 volumes:
   db-data:
-  storage-data:
+  gcs-data:
