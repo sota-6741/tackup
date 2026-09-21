@@ -98,7 +98,7 @@ test("署名のない URL ではファイルを取得できない", async () => 
     contentType: "application/pdf",
     size: pdf.length,
   });
-  await upload(url, pdf, uploadHeaders(pdf.length));
+  expect(await upload(url, pdf, uploadHeaders(pdf.length))).toBe(200);
 
   const downloadUrl = new URL(await storage.createDownloadUrl(key));
   const unsigned = `${downloadUrl.origin}${downloadUrl.pathname}`;
@@ -113,7 +113,7 @@ test("期限が切れた URL ではファイルを取得できない", async () 
     contentType: "application/pdf",
     size: pdf.length,
   });
-  await upload(url, pdf, uploadHeaders(pdf.length));
+  expect(await upload(url, pdf, uploadHeaders(pdf.length))).toBe(200);
 
   const [shortLived] = await makeStorageClient({})
     .bucket(bucket)
