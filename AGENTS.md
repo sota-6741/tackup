@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Commands
 
-- Before finishing a change, run `bun run check` (typecheck, lint, unit tests). Also run `bun run test:db` (or `bun run check:all`) when infrastructure or the database changed. Start PostgreSQL with `bun run db:up`.
+- Before finishing a change, run `bun run check` (typecheck, lint, unit tests). Also run `bun run test:db` and `bun run test:storage` (or `bun run check:all`) when infrastructure, the database, or file storage changed. Start PostgreSQL with `bun run db:up` and the Cloud Storage emulator with `bun run storage:up`, then `bun run storage:setup`.
 
 # Product docs
 
@@ -34,6 +34,7 @@ src/shared/{domain,infrastructure,presentation}/ cross-feature code (shadcn/ui l
 - Throw `DomainError` subclasses for expected failures; Server Actions turn them into `{ error }` state.
 - Test domain and application with the in-memory repository in `modules/<feature>/testing/`.
 - Test infrastructure against PostgreSQL in `*.db.test.ts` files (`bun run test:db`, uses `testDb` from `@/shared/testing/test-db`; tables are truncated before each test). `bun run test` stays DB-free.
+- Storage code uses `@google-cloud/storage`. Test it in two layers: `*.storage.test.ts` runs against the local emulator (`bun run test:storage`, uses `testStorageClient` from `@/shared/testing/test-storage`) and covers the happy path and the signed URL contents; `*.gcs.test.ts` runs in CI against a real dev bucket (`bun run test:gcs`, needs `GCS_TEST_BUCKET` and GCP credentials) and covers what the emulator cannot check — it does not verify signatures, so rejection of wrong size/type, expired URLs and unsigned reads must be tested there.
 - Table files (`infrastructure/schema.ts`) are loaded by drizzle-kit: use relative imports there, not `@/`.
 
 # UI: shadcn/ui on Base UI
