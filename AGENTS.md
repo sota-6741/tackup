@@ -8,37 +8,37 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Commands
+# コマンド
 
-- Before finishing a change, run `bun run check` (typecheck, lint, unit tests). Also run `bun run test:db` (or `bun run check:all`) when infrastructure or the database changed. Start PostgreSQL with `bun run db:up`.
+- 変更を終える前に `bun run check`（型チェック・lint・ユニットテスト）を実行する。infrastructure や DB を変えたときは `bun run test:db`（または `bun run check:all`）も実行する。PostgreSQL は `bun run db:up` で起動する。
 
-# Product docs
+# 仕様書
 
-- Read `docs/requirements.md` before implementing a feature, and `docs/screens.md` for screen specs. They are the source of truth; update them when a decision changes.
+- 機能を実装する前に `docs/requirements.md` を、画面の仕様は `docs/screens.md` を読む。これらが正とする。決めたことが変わったら更新する。
 
-# Architecture: Onion (feature modules × layers)
+# 構成: オニオンアーキテクチャー（機能モジュール × レイヤー）
 
 ```
-src/app/                          routing only; calls presentation or di
-src/di/                           composition root; wires infrastructure into use cases
-src/modules/<feature>/domain/     entities, value objects, repository interfaces (no packages)
-src/modules/<feature>/application/ use cases as `makeXxx(deps)` factories (no packages)
-src/modules/<feature>/infrastructure/ Drizzle tables (`schema.ts`) and repository implementations
-src/modules/<feature>/presentation/ Server Actions and components
-src/shared/{domain,infrastructure,presentation}/ cross-feature code (shadcn/ui lives in shared/presentation)
+src/app/                          ルーティングのみ。presentation か di を呼ぶ
+src/di/                           Composition Root。infrastructure を use case に注入する
+src/modules/<feature>/domain/     エンティティ、値オブジェクト、Repository のインターフェース（パッケージ不可）
+src/modules/<feature>/application/ `makeXxx(deps)` の形の use case（パッケージ不可）
+src/modules/<feature>/infrastructure/ Drizzle のテーブル（`schema.ts`）と Repository の実装
+src/modules/<feature>/presentation/ Server Actions とコンポーネント
+src/shared/{domain,infrastructure,presentation}/ 機能をまたぐコード（shadcn/ui は shared/presentation）
 ```
 
-- Dependencies point inward only. `bun run lint` enforces this with dependency-cruiser (`.dependency-cruiser.cjs`).
-- presentation never imports infrastructure; it gets use cases from `@/di/*`.
-- Read `@/env` only in infrastructure.
+- 依存は内側に向かうだけ。`bun run lint` が dependency-cruiser（`.dependency-cruiser.cjs`）で確かめる。
+- presentation は infrastructure を import しない。use case は `@/di/*` から受け取る。
+- `@/env` は infrastructure でだけ読む。
 
-# Detailed rules
+# 詳しい決まり
 
-Detailed rules live in `.claude/rules/` (in Japanese). Claude Code loads each file automatically when working on the files its `paths` lists; other agents should read the relevant file before changing those areas.
+詳しい決まりは `.claude/rules/` にある。Claude Code は、各ファイルの `paths` に合うファイルを扱うときに自動で読み込む。ほかのエージェントは、その範囲を変える前に該当するファイルを読む。
 
-- `error-handling.md`: `null` / typed result / `throw`, and which layer handles what. Code that still throws `DomainError` for expected failures predates this rule; do not add new ones.
-- `testing.md`: in-memory repositories, `*.db.test.ts`
-- `database.md`: Drizzle tables, `withSafeDatabaseErrors`
-- `ui.md`: shadcn/ui on Base UI
-- `code-style.md`: JSDoc, object parameters
-- `pull-requests.md`: branches, reviews, PR titles
+- `error-handling.md`: `null`・型付きの結果・`throw` の使い分けと、どのレイヤーが何を扱うか。想定内の失敗で `DomainError` を投げている既存コードはこの方針より前のもので、新しくは足さない。
+- `testing.md`: インメモリの Repository、`*.db.test.ts`
+- `database.md`: Drizzle のテーブル、`withSafeDatabaseErrors`
+- `ui.md`: Base UI 上の shadcn/ui
+- `code-style.md`: JSDoc、オブジェクトの引数
+- `pull-requests.md`: ブランチ、レビュー、PR のタイトル
