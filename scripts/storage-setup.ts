@@ -1,14 +1,10 @@
 import { env } from "@/env";
 import { setUpBucket } from "@/shared/infrastructure/storage-bucket-setup";
 import { makeStorageClient } from "@/shared/infrastructure/storage-client";
+import { assertLocalStorageEndpoint } from "@/shared/testing/local-storage-endpoint";
 import { ensureDevSigningKey } from "./dev-signing-key";
 
-const apiEndpoint = env.STORAGE_API_ENDPOINT;
-if (!apiEndpoint) {
-  throw new Error(
-    "STORAGE_API_ENDPOINT が未設定です。このスクリプトはローカルのエミュレーター専用です。本番のバケットと CORS は gcloud で設定してください（README の「本番に出すとき」）",
-  );
-}
+const apiEndpoint = assertLocalStorageEndpoint(env.STORAGE_API_ENDPOINT);
 
 const keyPath = ensureDevSigningKey();
 

@@ -45,6 +45,7 @@ bun run dev
   - アプリのサービスアカウントに付ける権限は2つだけ。
     - そのバケットへの `roles/storage.objectUser`
     - **自分自身**への `roles/iam.serviceAccountTokenCreator`（鍵ファイルなしで署名するために必要）
+  - `pending/` 以下に「1日で自動削除」のライフサイクルを設定する（アップロードしたまま掲示物の登録まで進まなかったファイルを消すため。`docs/requirements.md` の「原本のアップロード」）。
   - CORS は `gcloud storage buckets update gs://<バケット名> --cors-file=<ファイル>` で設定する。送信元は本番のオリジンだけ、メソッドは `PUT` と `GET`、ヘッダーは `content-type` と `x-goog-content-length-range`。`bun run storage:setup` はローカル用。
 
 ## CI から実際の Cloud Storage を使うテスト
