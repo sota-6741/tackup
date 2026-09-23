@@ -28,6 +28,8 @@ jobs:
       BETTER_AUTH_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: ci
       GOOGLE_CLIENT_SECRET: ci
+      STORAGE_BUCKET: tackup
+      STORAGE_API_ENDPOINT: http://127.0.0.1:4443
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -36,7 +38,27 @@ jobs:
       - run: bun run typecheck
       - run: bun run test
       - run: bun run test:db
+      - run: docker compose up -d --wait storage
+      - run: bun run test:storage
       - run: bun run db:migrate
       - run: bun run build
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e
+
+  gcs:
+    runs-on: ubuntu-latest
+    if: ${{ vars.GCS_TEST_BUCKET != '' && vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && vars.GCP_SERVICE_ACCOUNT != '' && github.event.pull_request.head.repo.fork != true }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCS_TEST_BUCKET: ${{ vars.GCS_TEST_BUCKET }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - run: bun install --frozen-lockfile
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - run: bun run test:gcs

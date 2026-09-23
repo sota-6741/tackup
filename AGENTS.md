@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # コマンド
 
-- 変更を終える前に `bun run check`（型チェック・lint・ユニットテスト）を実行する。infrastructure や DB を変えたときは `bun run test:db`（または `bun run check:all`）も実行する。PostgreSQL は `bun run db:up` で起動する。
+- 変更を終える前に `bun run check`（型チェック・lint・ユニットテスト）を実行する。infrastructure・DB・ファイルストレージを変えたときは `bun run test:db` と `bun run test:storage`（または `bun run check:all`）も実行する。PostgreSQL は `bun run db:up` で、Cloud Storage のエミュレーターは `bun run storage:up` のあと `bun run storage:setup` で用意する。
 
 # 仕様書
 
@@ -31,14 +31,15 @@ src/shared/{domain,infrastructure,presentation}/ 機能をまたぐコード（s
 - 依存は内側に向かうだけ。`bun run lint` が dependency-cruiser（`.dependency-cruiser.cjs`）で確かめる。
 - presentation は infrastructure を import しない。use case は `@/di/*` から受け取る。
 - `@/env` は infrastructure でだけ読む。
+- テスト用のコードは `testing/` に、開発用のツールは `scripts/` に置く。本番のコードはどちらも import しない（`bun run lint` の `no-testing-code-in-app`・`no-scripts-in-app` が確かめる）。
 
 # 詳しい決まり
 
 詳しい決まりは `.claude/rules/` にある。Claude Code は、各ファイルの `paths` に合うファイルを扱うときに自動で読み込む。ほかのエージェントは、その範囲を変える前に該当するファイルを読む。
 
 - `error-handling.md`: `null`・型付きの結果・`throw` の使い分けと、どのレイヤーが何を扱うか
-- `testing.md`: インメモリの Repository、`*.db.test.ts`
+- `testing.md`: インメモリの Repository、`*.db.test.ts`、ファイルストレージのテスト
 - `database.md`: Drizzle のテーブル、`withSafeDatabaseErrors`
 - `ui.md`: Base UI 上の shadcn/ui
 - `code-style.md`: JSDoc、オブジェクトの引数
-- `pull-requests.md`: ブランチ、レビュー、PR のタイトル
+- `pull-requests.md`: ブランチ、push 前のレビュー、ボットの指摘、PR のタイトル

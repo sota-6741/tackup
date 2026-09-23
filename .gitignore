@@ -49,3 +49,6 @@ next-env.d.ts
 /.claude/notes/
 /.claude/settings.local.json
 CLAUDE.local.md
+
+# ローカルの署名用の使い捨ての鍵（storage:setup が生成）
+.gcs-dev-key.json

@@ -21,6 +21,8 @@ bun install
 cp .env.example .env       # 値を埋める（BETTER_AUTH_SECRET は openssl rand -base64 32）
 bun run db:up              # PostgreSQL を起動
 bun run db:migrate         # マイグレーションを適用
+bun run storage:up         # ファイルの保存先（Cloud Storage のエミュレーター）を起動
+bun run storage:setup      # 署名用の鍵とバケットと CORS を準備
 bun run dev
 ```
 
@@ -36,6 +38,38 @@ bun run dev
 - **本番の DB**：インターネットに公開せず、アプリのサーバーからだけ接続できるようにする（ホスティングの内部ネットワークや、接続元の IP の制限を使う）。パスワードは推測できない長い値にする。`DATABASE_URL` には `?sslmode=require` を付け、DB との通信を暗号化する。
 - **HSTS**：`Strict-Transport-Security` に `includeSubDomains` を付けているので、公開するドメインのサブドメインもすべて HTTPS で配信する。
 - **Google OAuth**：承認済みのリダイレクト URI に `https://<本番のドメイン>/api/auth/callback/google` を追加する。
+- **ファイルの保存先（Cloud Storage）**：
+  - バケットは「均一なバケットレベルのアクセス」と「公開アクセスの防止」を有効にして作る（ファイルは署名付き URL でだけ取得する）。
+  - `STORAGE_BUCKET` にバケット名を設定する。`STORAGE_API_ENDPOINT` と `GOOGLE_APPLICATION_CREDENTIALS` は**設定しない**（Cloud Run のサービスアカウントで署名する）。
+  - プロジェクトで IAM Service Account Credentials API（`iamcredentials.googleapis.com`）を有効にする。鍵ファイルなしの署名はこの API を使うので、無効だと署名付き URL の発行が実行時に失敗する。
+  - アプリのサービスアカウントに付ける権限は2つだけ。
+    - そのバケットへの `roles/storage.objectUser`
+    - **自分自身**への `roles/iam.serviceAccountTokenCreator`（鍵ファイルなしで署名するために必要）
+  - `pending/` 以下に「1日で自動削除」のライフサイクルを設定する（アップロードしたまま掲示物の登録まで進まなかったファイルを消すため。`docs/requirements.md` の「原本のアップロード」）。
+  - CORS は `gcloud storage buckets update gs://<バケット名> --cors-file=<ファイル>` で設定する。送信元は本番のオリジンだけ、メソッドは `PUT` と `GET`、ヘッダーは `content-type` と `x-goog-content-length-range`。`bun run storage:setup` はローカル用。
+
+## CI から実際の Cloud Storage を使うテスト
+
+ローカルのエミュレーターは署名を検証しないので、「サイズ・種類が違うアップロードが拒否されるか」「期限切れ・署名なしの取得が拒否されるか」は、本物のバケットでしか確かめられない。これを CI（`gcs` ジョブ）から確かめる。
+
+1. **本番とは別の GCP プロジェクト**を作り、テスト用のバケットを作る（「公開アクセスの防止」を有効に）。
+2. バケットに「1日で自動削除」のライフサイクルを設定する（テストのファイルが残らないようにする）。
+3. テスト用のサービスアカウントを作り、**そのバケットだけ**に `roles/storage.objectUser` と、自分自身への `roles/iam.serviceAccountTokenCreator` を付ける。ほかの権限は付けない。
+4. Workload Identity 連携（プールとプロバイダ）を作り、**このリポジトリからのみ**に限定する条件を必ず付ける（`assertion.repository == 'sota-6741/tackup'`）。ここを空にすると、誰のリポジトリからでも接続できてしまう。
+5. GitHub 側の principal を、テスト用のサービスアカウントに `roles/iam.workloadIdentityUser` でバインドする。これがないと認証できない（3 の `roles/iam.serviceAccountTokenCreator` は署名のための権限で、こちらの代わりにはならない）。
+
+   ```bash
+   gcloud iam service-accounts add-iam-policy-binding <サービスアカウントのメールアドレス> \
+     --role=roles/iam.workloadIdentityUser \
+     --member="principalSet://iam.googleapis.com/projects/<プロジェクト番号>/locations/global/workloadIdentityPools/<プール名>/attribute.repository/sota-6741/tackup"
+   ```
+
+6. GitHub のリポジトリの変数（Variables。シークレットではない）に次を設定すると、`gcs` ジョブが動き出す。
+   - `GCS_TEST_BUCKET`：テスト用のバケット名
+   - `GCP_WORKLOAD_IDENTITY_PROVIDER`：プロバイダのリソース名
+   - `GCP_SERVICE_ACCOUNT`：テスト用のサービスアカウントのメールアドレス
+
+鍵ファイル（JSON）は作らない。fork からの PR ではこのジョブは動かない（接続できないため）。
 
 ## スクリプト
 
@@ -44,13 +78,17 @@ bun run dev
 | `bun run dev`                     | 開発サーバーを起動                                                          |
 | `bun run build` / `bun run start` | 本番ビルド / 本番サーバーを起動                                             |
 | `bun run check`                   | 型チェック・lint・ユニットテストをまとめて実行（変更のたびに）              |
-| `bun run check:all`               | `check` に加えて DB を使うテストも実行（DB を触ったとき、コミット前）       |
+| `bun run check:all`               | `check` に加えて DB とストレージを使うテストも実行（コミット前）            |
 | `bun run lint` / `bun run format` | Biome と依存ルールのチェック / Biome で自動修正                             |
 | `bun run typecheck`               | 型チェック                                                                  |
 | `bun run test`                    | ユニットテスト (Vitest、DB を使わない)                                      |
 | `bun run test:db`                 | DB を使うテスト (Vitest、PostgreSQL の起動が必要)                           |
+| `bun run test:storage`            | ストレージを使うテスト (Vitest、エミュレーターの起動が必要)                 |
+| `bun run test:gcs`                | 実際の Cloud Storage に対するテスト (CI 用。`GCS_TEST_BUCKET` と GCP の認証が必要) |
 | `bun run test:e2e`                | E2E テスト (Playwright、初回は `bunx playwright install chromium`)          |
 | `bun run db:up`                   | PostgreSQL を起動 (Docker)                                                  |
+| `bun run storage:up`              | ファイルの保存先（エミュレーター）を起動 (Docker)                           |
+| `bun run storage:setup`           | 署名用の使い捨ての鍵・バケット・CORS を準備（何度実行してもよい）            |
 | `bun run db:generate`             | スキーマからマイグレーションを生成                                          |
 | `bun run db:migrate`              | マイグレーションを適用                                                      |
 | `bun run db:studio`               | Drizzle Studio を起動                                                       |
@@ -105,10 +143,11 @@ drizzle/                        生成されたマイグレーション
 
 ```bash
 bun run db:up        # PostgreSQL を起動（開発を始めるとき）
+bun run storage:up   # ファイルの保存先（エミュレーター）を起動（開発を始めるとき）
 bun run dev          # 開発サーバーを起動
 bun run format       # 書いたコードを整形
 bun run check        # 型チェック・lint・ユニットテスト（変更のたびに）
-bun run check:all    # DB を使うテストも含めて実行（DB を触ったとき、コミットの前）
+bun run check:all    # DB とストレージを使うテストも含めて実行（コミットの前）
 ```
 
 `check` は途中で失敗するとそこで止まります。`format` はファイルを書き換えるので `check` には含めていません。

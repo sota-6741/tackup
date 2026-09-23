@@ -12,7 +12,11 @@ export default defineConfig({
           name: "unit",
           environment: "jsdom",
           include: ["src/**/*.test.{ts,tsx}"],
-          exclude: ["src/**/*.db.test.ts"],
+          exclude: [
+            "src/**/*.db.test.ts",
+            "src/**/*.storage.test.ts",
+            "src/**/*.gcs.test.ts",
+          ],
           setupFiles: ["./vitest.setup.ts"],
         },
       },
@@ -25,6 +29,24 @@ export default defineConfig({
           globalSetup: ["./vitest.db-global-setup.ts"],
           setupFiles: ["./vitest.db-setup.ts"],
           fileParallelism: false,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "storage",
+          environment: "node",
+          include: ["src/**/*.storage.test.ts"],
+          globalSetup: ["./vitest.storage-global-setup.ts"],
+          setupFiles: ["./vitest.storage-setup.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "gcs",
+          environment: "node",
+          include: ["src/**/*.gcs.test.ts"],
         },
       },
     ],

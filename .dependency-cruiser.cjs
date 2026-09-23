@@ -75,6 +75,20 @@ module.exports = {
       to: { path: [`${LAYER}/presentation/`, "^src/app/"] },
     },
     {
+      name: "no-testing-code-in-app",
+      comment: "本番のコードはテスト用のコード（testing/）を使わない",
+      severity: "error",
+      from: { path: "^src/", pathNot: "/testing/" },
+      to: { path: "/testing/" },
+    },
+    {
+      name: "no-scripts-in-app",
+      comment: "本番のコードは開発用のスクリプト（scripts/）を使わない",
+      severity: "error",
+      from: { path: "^src/" },
+      to: { path: "^scripts/" },
+    },
+    {
       name: "env-in-infrastructure-only",
       comment: "環境変数は infrastructure でのみ読む",
       severity: "error",

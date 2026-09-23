@@ -9,6 +9,25 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tackup"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  storage:
+    image: fsouza/fake-gcs-server:1.56.1
+    command: ["-scheme", "http", "-public-host", "127.0.0.1:4443"]
+    ports:
+      - "127.0.0.1:4443:4443"
+    volumes:
+      - gcs-data:/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:4443/storage/v1/b"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
 
 volumes:
   db-data:
+  gcs-data:
