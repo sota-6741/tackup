@@ -1,4 +1,4 @@
-import type { Board } from "@/modules/board/domain/board";
+import type { Board, BoardNameError } from "@/modules/board/domain/board";
 import { parseBoardName } from "@/modules/board/domain/board";
 import type { BoardRepository } from "@/modules/board/domain/board-repository";
 import type { UnitOfWork } from "@/shared/domain/unit-of-work";
@@ -8,6 +8,10 @@ export type CreateBoardInput = {
   isPublic: boolean;
   userId: string;
 };
+
+export type CreateBoardResult =
+  | { ok: true; board: Board }
+  | { ok: false; reason: BoardNameError };
 
 type Deps = {
   unitOfWork: UnitOfWork<{ boardRepository: BoardRepository }>;
@@ -19,12 +23,13 @@ export function makeCreateBoard({ unitOfWork, generateInviteToken }: Deps) {
     name,
     isPublic,
     userId,
-  }: CreateBoardInput): Promise<Board> {
+  }: CreateBoardInput): Promise<CreateBoardResult> {
     const boardName = parseBoardName(name);
+    if (!boardName.ok) return boardName;
 
     return unitOfWork.run(async ({ boardRepository }) => {
       const board = await boardRepository.create({
-        name: boardName,
+        name: boardName.name,
         isPublic,
       });
       await boardRepository.addMember({
@@ -36,7 +41,7 @@ export function makeCreateBoard({ unitOfWork, generateInviteToken }: Deps) {
         boardId: board.id,
         token: generateInviteToken(),
       });
-      return board;
+      return { ok: true, board };
     });
   };
 }

@@ -1,27 +1,36 @@
 import type { Board } from "@/modules/board/domain/board";
 import { ROLES } from "@/modules/board/domain/board-member";
 import type { BoardRepository } from "@/modules/board/domain/board-repository";
-import { NotFoundError } from "@/shared/domain/errors";
-import type { AssertBoardAccessInput } from "./assert-board-access";
+import type {
+  CheckBoardAccessInput,
+  CheckBoardAccessResult,
+} from "./check-board-access";
 
 type Deps = {
   boardRepository: BoardRepository;
-  assertBoardAccess: (input: AssertBoardAccessInput) => Promise<void>;
+  checkBoardAccess: (
+    input: CheckBoardAccessInput,
+  ) => Promise<CheckBoardAccessResult>;
 };
 
 export type GetBoardInput = { boardId: string; userId: string };
 
-export function makeGetBoard({ boardRepository, assertBoardAccess }: Deps) {
+export type GetBoardResult =
+  | { ok: true; board: Board }
+  | { ok: false; reason: "board_not_found" | "forbidden" };
+
+export function makeGetBoard({ boardRepository, checkBoardAccess }: Deps) {
   return async function getBoard({
     boardId,
     userId,
-  }: GetBoardInput): Promise<Board> {
-    await assertBoardAccess({ boardId, userId, roles: ROLES });
+  }: GetBoardInput): Promise<GetBoardResult> {
+    const access = await checkBoardAccess({ boardId, userId, roles: ROLES });
+    if (!access.ok) return access;
 
     const board = await boardRepository.findById(boardId);
     if (!board) {
-      throw new NotFoundError("掲示板が見つかりません");
+      return { ok: false, reason: "board_not_found" };
     }
-    return board;
+    return { ok: true, board };
   };
 }

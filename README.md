@@ -75,7 +75,7 @@ src/
 │       ├── presentation/       Server Actions、コンポーネント
 │       └── testing/            インメモリの Repository（テスト用）
 ├── shared/
-│   ├── domain/                 DomainError など
+│   ├── domain/                 Unit of Work のインターフェースなど
 │   ├── infrastructure/         DB クライアント
 │   └── presentation/           shadcn/ui
 ├── env.ts                      型付きの環境変数
