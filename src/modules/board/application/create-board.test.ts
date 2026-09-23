@@ -1,6 +1,5 @@
 import { expect, test } from "vitest";
 import { makeInMemoryBoardRepository } from "@/modules/board/testing/in-memory-board-repository";
-import { ValidationError } from "@/shared/domain/errors";
 import { makeInMemoryUnitOfWork } from "@/shared/testing/in-memory-unit-of-work";
 import { makeCreateBoard } from "./create-board";
 
@@ -16,33 +15,37 @@ function setup() {
 test("掲示板を作成して返す", async () => {
   const { createBoard, boards } = setup();
 
-  const board = await createBoard({
+  const result = await createBoard({
     name: "  中野のボード  ",
     isPublic: true,
     userId: "user-1",
   });
 
-  expect(board).toMatchObject({ name: "中野のボード", isPublic: true });
-  expect(boards).toEqual([board]);
+  expect(result).toMatchObject({
+    ok: true,
+    board: { name: "中野のボード", isPublic: true },
+  });
+  expect(boards).toHaveLength(1);
+  expect(result).toEqual({ ok: true, board: boards[0] });
 });
 
 test("作成者が admin として登録される", async () => {
-  const { createBoard, repository } = setup();
+  const { createBoard, repository, boards } = setup();
 
-  const board = await createBoard({
+  await createBoard({
     name: "中野のボード",
     isPublic: false,
     userId: "user-1",
   });
 
-  const member = await repository.findMember(board.id, "user-1");
+  const member = await repository.findMember(boards[0].id, "user-1");
   expect(member?.role).toBe("admin");
 });
 
 test("招待リンクが1件発行される", async () => {
-  const { createBoard, inviteTokens } = setup();
+  const { createBoard, boards, inviteTokens } = setup();
 
-  const board = await createBoard({
+  await createBoard({
     name: "中野のボード",
     isPublic: false,
     userId: "user-1",
@@ -50,17 +53,17 @@ test("招待リンクが1件発行される", async () => {
 
   expect(inviteTokens).toHaveLength(1);
   expect(inviteTokens[0]).toMatchObject({
-    boardId: board.id,
+    boardId: boards[0].id,
     token: "test-token",
   });
 });
 
-test("掲示板名が不正なときはエラーになり、何も保存されない", async () => {
+test("掲示板名が不正なときは理由を返し、何も保存されない", async () => {
   const { createBoard, boards, inviteTokens } = setup();
 
   await expect(
     createBoard({ name: "   ", isPublic: false, userId: "user-1" }),
-  ).rejects.toThrow(ValidationError);
+  ).resolves.toEqual({ ok: false, reason: "name_empty" });
   expect(boards).toHaveLength(0);
   expect(inviteTokens).toHaveLength(0);
 });

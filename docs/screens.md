@@ -23,7 +23,7 @@
 | -- | -- |
 | 未ログイン | `/sign-in` へリダイレクトする（`proxy.ts` とページの両方で確認） |
 | 存在しない・所属していない・ID の形式が不正 | 404 画面（区別しない） |
-| 入力エラー（`ValidationError`） | フォームの該当項目の近くにメッセージを表示し、入力値は残す |
+| 入力エラー（use case が `{ ok: false, reason }` を返す） | フォームの該当項目の近くにメッセージを表示し、入力値は残す |
 | 送信中 | 送信ボタンを無効にし、文言を「〜中…」にする |
 | 一覧が空 | 空であることと、次にできる操作を1行で示す |
 
@@ -187,14 +187,14 @@ src/app/boards/layout.tsx                    [Server] getSession、listMyBoards
 | -- | -- |
 | 「作成する」 | Server Action `createBoardAction` → `createBoard({ name, isPublic, userId })`。`userId` はフォームではなくセッションから取る |
 | 成功 | `/boards/{boardId}` へリダイレクト |
-| `ValidationError` | 掲示板名の下にメッセージを表示し、入力値は残す |
+| `name_empty`・`name_too_long` | Server Action で理由に応じた文言に変え、掲示板名の下に表示する。入力値は残す |
 | 想定外のエラー（DB に接続できないなど） | Server Action では捕まえずに投げ直し、`/boards` のエラー画面（`src/app/boards/error.tsx`）に「問題が発生しました」と「もう一度試す」ボタンを表示する。サイドバーは残る |
 | 成功後のサイドバー | 作った掲示板がすぐ一覧に出る（`revalidatePath("/boards", "layout")`） |
 | 送信中 | ボタンを無効にし「作成中…」 |
 
 見出しの下の説明文と、入力欄の例（placeholder）は表示しない（見出しと項目名で十分伝わるため）。
 
-ブラウザ標準の入力チェック（`required` による吹き出し）は `noValidate` で止め、エラーはサーバーの `ValidationError` のメッセージだけを掲示板名の下に表示する。`required` は必須項目であることを支援技術に伝えるために残す。
+ブラウザ標準の入力チェック（`required` による吹き出し）は `noValidate` で止め、エラーはサーバーが理由に応じて決めた文言だけを掲示板名の下に表示する。`required` は必須項目であることを支援技術に伝えるために残す。
 
 ### 部品構成
 
@@ -248,12 +248,12 @@ src/app/boards/new/page.tsx                  [Server] 見出しと CreateBoardFo
 
 | 状態 | 見せ方 |
 | -- | -- |
-| `getBoard` が `NotFoundError` | 404 画面 |
+| `getBoard` が `board_not_found`・`forbidden` | 404 画面（掲示板の存在を知られないよう区別しない） |
 
 ### 部品構成
 
 ```
-src/app/boards/[boardId]/page.tsx            [Server] getBoard。NotFoundError なら 404
+src/app/boards/[boardId]/page.tsx            [Server] getBoard。失敗なら 404
 ├ BoardHeader                                [Server] modules/board/presentation
 └ RememberLastBoard                          [Client] modules/board/presentation（Cookie を書く。何も表示しない）
 ```

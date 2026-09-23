@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createBoard } from "@/di/board";
 import { getSession } from "@/modules/auth/presentation/session";
-import { DomainError } from "@/shared/domain/errors";
+import type { CreateBoardResult } from "@/modules/board/application/create-board";
+import { BOARD_NAME_MAX_LENGTH } from "@/modules/board/domain/board";
 
 export type CreateBoardState = {
   error: string | null;
@@ -12,6 +13,14 @@ export type CreateBoardState = {
     name: string;
     isPublic: boolean;
   };
+};
+
+const CREATE_BOARD_ERROR_MESSAGES: Record<
+  Extract<CreateBoardResult, { ok: false }>["reason"],
+  string
+> = {
+  name_empty: "掲示板名を入力してください。",
+  name_too_long: `掲示板名は${BOARD_NAME_MAX_LENGTH}文字以内で入力してください`,
 };
 
 export async function createBoardAction(
@@ -26,19 +35,15 @@ export async function createBoardAction(
   const isPublic = formData.get("visibility") === "public";
   const values = { name, isPublic };
 
-  let boardId: string;
-  try {
-    const board = await createBoard({
-      name,
-      isPublic,
-      userId: session.user.id,
-    });
-    boardId = board.id;
-  } catch (error) {
-    if (!(error instanceof DomainError)) throw error;
-    return { error: error.message, values };
+  const result = await createBoard({
+    name,
+    isPublic,
+    userId: session.user.id,
+  });
+  if (!result.ok) {
+    return { error: CREATE_BOARD_ERROR_MESSAGES[result.reason], values };
   }
 
   revalidatePath("/boards", "layout");
-  redirect(`/boards/${boardId}`);
+  redirect(`/boards/${result.board.id}`);
 }

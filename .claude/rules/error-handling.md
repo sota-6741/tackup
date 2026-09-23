@@ -19,8 +19,6 @@ paths:
 
 「関数型らしいから Result を使う」「短く書けるから例外を投げる」のように、記法や好みを先にした判断をしない。
 
-> **移行中の注意**: 既存コードには、想定内の失敗で `DomainError` の子クラス（`ValidationError`・`NotFoundError`・`ForbiddenError`）を投げ、Server Action や page で `instanceof` で捕まえるものが残っている。これはこの方針より前の書き方で、別途 Result に移行する。新しく書くコードでは想定内の失敗に `DomainError` を投げない。
-
 ---
 
 ## 1. 失敗の分類
@@ -358,7 +356,7 @@ retry するときは回数の上限、backoff、必要なら jitter、対象の
 
 例えば UUID の形でない ID を、400 にするか、存在しない対象と同じく `notFound()`（404）にするかは、どちらもありうる。Repository の都合ではなく、画面・API としての契約で決める。
 
-既存の方針があれば保つ（例: 所属していない掲示板は存在を知られないよう、権限なしではなく「見つからない」と同じに扱う。`src/modules/board/application/assert-board-access.ts`）。契約を変えるときは影響を確かめる。
+既存の方針があれば保つ（例: 所属していない掲示板は存在を知られないよう、権限なしではなく「見つからない」と同じに扱う。`src/modules/board/application/check-board-access.ts`）。契約を変えるときは影響を確かめる。
 
 ---
 
@@ -403,7 +401,7 @@ Either・Option・TaskEither・Effect System・汎用の Error Monad・複雑な
 
 ## 21. 既存コードを先に調べる
 
-新しく実装する前に、関連する既存コードを読む。同じ Module の UseCase、Repository の interface と実装、既存のエラークラス（`src/shared/domain/errors.ts`・`src/shared/infrastructure/database-error.ts`）、`error.tsx`・`not-found.tsx`、検証処理、Server Action、テスト。
+新しく実装する前に、関連する既存コードを読む。同じ Module の UseCase、Repository の interface と実装、既存の Result の型と Server Action での文言の対応（例: `src/modules/board/application/create-board.ts`・`src/modules/board/presentation/actions.ts`）、Infrastructure のエラー（`src/shared/infrastructure/database-error.ts`）、`error.tsx`・`not-found.tsx`、検証処理、Server Action、テスト。
 
 既存コードを読まずに新しいエラーのパターンを作らない。ただし既存コードが明らかにエラー情報を失っているなら、盲目的に真似せず、影響範囲を確かめたうえで直す。
 

@@ -513,7 +513,7 @@ Cookie の値は利用者が書き換えられるため、遷移先を決める�
 例:
 
 ```ts
-assertBoardAccess(...)
+checkBoardAccess(...)
 ```
 
 少なくとも以下の処理では認可を行う。
@@ -1011,7 +1011,7 @@ Application Server
 
 * Drizzle schema（`src/modules/<feature>/infrastructure/schema.ts`）
   * Board（`isPublic` を含む）/ BoardMember / InviteToken
-* `assertBoardAccess`
+* `checkBoardAccess`
 * 掲示板作成（公開設定の選択、作成者を admin として登録、招待リンクの発行）
 * メンバー向け掲示板ボードの枠（`/boards/{boardId}`、掲示物の表示は後続で実装）
 * 所属する掲示板の一覧を表示するサイドバー
