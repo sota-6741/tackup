@@ -8,50 +8,38 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Commands
+# コマンド
 
-- Before finishing a change, run `bun run check` (typecheck, lint, unit tests). Also run `bun run test:db` and `bun run test:storage` (or `bun run check:all`) when infrastructure, the database, or file storage changed. Start PostgreSQL with `bun run db:up` and the Cloud Storage emulator with `bun run storage:up`, then `bun run storage:setup`.
+- 変更を終える前に `bun run check`（型チェック・lint・ユニットテスト）を実行する。infrastructure・DB・ファイルストレージを変えたときは `bun run test:db` と `bun run test:storage`（または `bun run check:all`）も実行する。PostgreSQL は `bun run db:up` で、Cloud Storage のエミュレーターは `bun run storage:up` のあと `bun run storage:setup` で用意する。
 
-# Product docs
+# 仕様書
 
-- Read `docs/requirements.md` before implementing a feature, and `docs/screens.md` for screen specs. They are the source of truth; update them when a decision changes.
+- 機能を実装する前に `docs/requirements.md` を、画面の仕様は `docs/screens.md` を読む。これらが正とする。決めたことが変わったら更新する。
 
-# Architecture: Onion (feature modules × layers)
+# 構成: オニオンアーキテクチャー（機能モジュール × レイヤー）
 
 ```
-src/app/                          routing only; calls presentation or di
-src/di/                           composition root; wires infrastructure into use cases
-src/modules/<feature>/domain/     entities, value objects, repository interfaces (no packages)
-src/modules/<feature>/application/ use cases as `makeXxx(deps)` factories (no packages)
-src/modules/<feature>/infrastructure/ Drizzle tables (`schema.ts`) and repository implementations
-src/modules/<feature>/presentation/ Server Actions and components
-src/shared/{domain,infrastructure,presentation}/ cross-feature code (shadcn/ui lives in shared/presentation)
+src/app/                          ルーティングのみ。presentation か di を呼ぶ
+src/di/                           Composition Root。infrastructure を use case に注入する
+src/modules/<feature>/domain/     エンティティ、値オブジェクト、Repository のインターフェース（パッケージ不可）
+src/modules/<feature>/application/ `makeXxx(deps)` の形の use case（パッケージ不可）
+src/modules/<feature>/infrastructure/ Drizzle のテーブル（`schema.ts`）と Repository の実装
+src/modules/<feature>/presentation/ Server Actions とコンポーネント
+src/shared/{domain,infrastructure,presentation}/ 機能をまたぐコード（shadcn/ui は shared/presentation）
 ```
 
-- Dependencies point inward only. `bun run lint` enforces this with dependency-cruiser (`.dependency-cruiser.cjs`).
-- presentation never imports infrastructure; it gets use cases from `@/di/*`.
-- Read `@/env` only in infrastructure.
-- Throw `DomainError` subclasses for expected failures; Server Actions turn them into `{ error }` state.
-- Test domain and application with the in-memory repository in `modules/<feature>/testing/`.
-- Test helpers live in a `testing/` folder; dev-only tooling lives in `scripts/`. Production code must not import either — `bun run lint` enforces this (`no-testing-code-in-app`, `no-scripts-in-app`).
-- Test infrastructure against PostgreSQL in `*.db.test.ts` files (`bun run test:db`, uses `testDb` from `@/shared/testing/test-db`; tables are truncated before each test). `bun run test` stays DB-free.
-- Storage code uses `@google-cloud/storage`. Test it in two layers: `*.storage.test.ts` runs against the local emulator (`bun run test:storage`, uses `testStorageClient` from `@/shared/testing/test-storage`) and covers the happy path and the signed URL contents; `*.gcs.test.ts` runs in CI against a real dev bucket (`bun run test:gcs`, needs `GCS_TEST_BUCKET` and GCP credentials) and covers what the emulator cannot check — it does not verify signatures, so rejection of wrong size/type, expired URLs and unsigned reads must be tested there.
-- Table files (`infrastructure/schema.ts`) are loaded by drizzle-kit: use relative imports there, not `@/`.
+- 依存は内側に向かうだけ。`bun run lint` が dependency-cruiser（`.dependency-cruiser.cjs`）で確かめる。
+- presentation は infrastructure を import しない。use case は `@/di/*` から受け取る。
+- `@/env` は infrastructure でだけ読む。
+- テスト用のコードは `testing/` に、開発用のツールは `scripts/` に置く。本番のコードはどちらも import しない（`bun run lint` の `no-testing-code-in-app`・`no-scripts-in-app` が確かめる）。
 
-# UI: shadcn/ui on Base UI
+# 詳しい決まり
 
-- UI uses shadcn/ui with the `base-nova` style, which is built on Base UI (`@base-ui/react`), not Radix. Add components with `bunx shadcn@latest add <name>`; they are generated into `src/shared/presentation/components/ui`.
-- Base UI composes elements with the `render` prop, not Radix's `asChild` (e.g. `<SidebarMenuButton render={<Link href="/boards/new" />}>`). Most shadcn/ui examples online are for Radix: read `node_modules/@base-ui/react/docs/` before writing UI code.
-- Do not render a link through `Button`'s `render` prop (Base UI enforces button semantics). Style the link instead: `<Link href="/boards" className={buttonVariants()}>`.
-- Merge class names with `cn` from `@/shared/presentation/lib/utils`.
-- Keep `components/ui` generic. Feature-specific UI (sidebars, forms) lives in `src/modules/<feature>/presentation` and composes the `ui` components.
-- `src/shared/presentation/components/ui/**` is generated by shadcn and excluded from the Biome linter (`overrides` in `biome.json`); the formatter still applies. Do not hand-edit those files to satisfy lint — re-running `shadcn add` overwrites them.
-- Add a `/** JSDoc */` comment only when behavior, reasons, or caveats are not obvious from the name and types. Do not restate names, do not write types in `@param`/`@returns`, write it in Japanese, and put it on the interface when the rule is part of an interface contract.
-- Receive object parameters by destructuring them in the signature (one level of shorthand properties only). When passing values on to another function, list the properties explicitly instead of spreading; use spread only to carry over a whole object. Keep a parameter named when the function treats it as one thing (e.g. `hasRole(member, roles)`).
+詳しい決まりは `.claude/rules/` にある。Claude Code は、各ファイルの `paths` に合うファイルを扱うときに自動で読み込む。ほかのエージェントは、その範囲を変える前に該当するファイルを読む。
 
-# Workflow: pull requests
-
-- `main` is protected by a ruleset: no direct pushes. Work on a branch, open a PR, and merge it with a merge commit (the only allowed method) after the `check` CI job passes and every review thread is resolved. Merged branches are deleted automatically.
-- Before pushing a branch and opening a PR, run the `code-review` and `security-review` skills over the branch (they take the working tree or the branch diff against `main`, so committed work can be reviewed too) and handle the findings first.
-- CodeRabbit (`.coderabbit.yaml`) and GitHub Copilot (`.github/copilot-instructions.md`) review each PR automatically. For bot comments, decide whether to fix each one, then resolve the thread without replying to the bot. For human review comments, fix or reply with the reason not to, then resolve the thread.
-- Write PR titles as `prefix: 日本語の説明` (`feat`, `fix`, `refactor`, `test`, `docs`, `chore`); the title becomes the merge commit subject.
+- `error-handling.md`: `null`・型付きの結果・`throw` の使い分けと、どのレイヤーが何を扱うか。想定内の失敗で `DomainError` を投げている既存コードはこの方針より前のもので、新しくは足さない。
+- `testing.md`: インメモリの Repository、`*.db.test.ts`、ファイルストレージのテスト
+- `database.md`: Drizzle のテーブル、`withSafeDatabaseErrors`
+- `ui.md`: Base UI 上の shadcn/ui
+- `code-style.md`: JSDoc、オブジェクトの引数
+- `pull-requests.md`: ブランチ、push 前のレビュー、ボットの指摘、PR のタイトル
