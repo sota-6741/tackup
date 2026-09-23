@@ -1,22 +1,21 @@
 import { expect, test } from "vitest";
 import { makeInMemoryBoardRepository } from "@/modules/board/testing/in-memory-board-repository";
-import { ForbiddenError, NotFoundError } from "@/shared/domain/errors";
-import { makeAssertBoardAccess } from "./assert-board-access";
+import { makeCheckBoardAccess } from "./check-board-access";
 
 async function setup() {
   const { repository, members } = makeInMemoryBoardRepository();
-  const assertBoardAccess = makeAssertBoardAccess({
+  const checkBoardAccess = makeCheckBoardAccess({
     boardRepository: repository,
   });
   const board = await repository.create({
     name: "中野のボード",
     isPublic: false,
   });
-  return { assertBoardAccess, repository, members, board };
+  return { checkBoardAccess, repository, members, board };
 }
 
-test("許可されたロールを持つメンバーはエラーにならない", async () => {
-  const { assertBoardAccess, members, board } = await setup();
+test("許可されたロールを持つメンバーは ok になる", async () => {
+  const { checkBoardAccess, members, board } = await setup();
   members.push({
     boardId: board.id,
     userId: "user-1",
@@ -25,16 +24,16 @@ test("許可されたロールを持つメンバーはエラーにならない",
   });
 
   await expect(
-    assertBoardAccess({
+    checkBoardAccess({
       boardId: board.id,
       userId: "user-1",
       roles: ["admin"],
     }),
-  ).resolves.toBeUndefined();
+  ).resolves.toEqual({ ok: true });
 });
 
-test("許可されたロールが複数あるとき、いずれかを持てばエラーにならない", async () => {
-  const { assertBoardAccess, members, board } = await setup();
+test("許可されたロールが複数あるとき、いずれかを持てば ok になる", async () => {
+  const { checkBoardAccess, members, board } = await setup();
   members.push({
     boardId: board.id,
     userId: "user-1",
@@ -43,16 +42,16 @@ test("許可されたロールが複数あるとき、いずれかを持てば�
   });
 
   await expect(
-    assertBoardAccess({
+    checkBoardAccess({
       boardId: board.id,
       userId: "user-1",
       roles: ["admin", "poster"],
     }),
-  ).resolves.toBeUndefined();
+  ).resolves.toEqual({ ok: true });
 });
 
-test("許可されたロールを持たないメンバーは ForbiddenError になる", async () => {
-  const { assertBoardAccess, members, board } = await setup();
+test("許可されたロールを持たないメンバーは forbidden になる", async () => {
+  const { checkBoardAccess, members, board } = await setup();
   members.push({
     boardId: board.id,
     userId: "user-1",
@@ -61,16 +60,16 @@ test("許可されたロールを持たないメンバーは ForbiddenError に�
   });
 
   await expect(
-    assertBoardAccess({
+    checkBoardAccess({
       boardId: board.id,
       userId: "user-1",
       roles: ["admin"],
     }),
-  ).rejects.toThrow(ForbiddenError);
+  ).resolves.toEqual({ ok: false, reason: "forbidden" });
 });
 
-test("所属していないユーザーは NotFoundError になる", async () => {
-  const { assertBoardAccess, members, board } = await setup();
+test("所属していないユーザーは board_not_found になる", async () => {
+  const { checkBoardAccess, members, board } = await setup();
   members.push({
     boardId: board.id,
     userId: "user-1",
@@ -79,16 +78,16 @@ test("所属していないユーザーは NotFoundError になる", async () =>
   });
 
   await expect(
-    assertBoardAccess({
+    checkBoardAccess({
       boardId: board.id,
       userId: "user-2",
       roles: ["admin"],
     }),
-  ).rejects.toThrow(NotFoundError);
+  ).resolves.toEqual({ ok: false, reason: "board_not_found" });
 });
 
-test("別の掲示板で admin でも、この掲示板に所属していなければ NotFoundError になる", async () => {
-  const { assertBoardAccess, repository, members, board } = await setup();
+test("別の掲示板で admin でも、この掲示板に所属していなければ board_not_found になる", async () => {
+  const { checkBoardAccess, repository, members, board } = await setup();
   const otherBoard = await repository.create({
     name: "別のボード",
     isPublic: false,
@@ -101,22 +100,22 @@ test("別の掲示板で admin でも、この掲示板に所属していなけ�
   });
 
   await expect(
-    assertBoardAccess({
+    checkBoardAccess({
       boardId: board.id,
       userId: "user-1",
       roles: ["admin"],
     }),
-  ).rejects.toThrow(NotFoundError);
+  ).resolves.toEqual({ ok: false, reason: "board_not_found" });
 });
 
-test("存在しない掲示板の場合も NotFoundError になる", async () => {
-  const { assertBoardAccess } = await setup();
+test("存在しない掲示板の場合も board_not_found になる", async () => {
+  const { checkBoardAccess } = await setup();
 
   await expect(
-    assertBoardAccess({
+    checkBoardAccess({
       boardId: "missing-board",
       userId: "user-1",
       roles: ["admin", "poster"],
     }),
-  ).rejects.toThrow(NotFoundError);
+  ).resolves.toEqual({ ok: false, reason: "board_not_found" });
 });

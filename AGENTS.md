@@ -36,7 +36,7 @@ src/shared/{domain,infrastructure,presentation}/ 機能をまたぐコード（s
 
 詳しい決まりは `.claude/rules/` にある。Claude Code は、各ファイルの `paths` に合うファイルを扱うときに自動で読み込む。ほかのエージェントは、その範囲を変える前に該当するファイルを読む。
 
-- `error-handling.md`: `null`・型付きの結果・`throw` の使い分けと、どのレイヤーが何を扱うか。想定内の失敗で `DomainError` を投げている既存コードはこの方針より前のもので、新しくは足さない。
+- `error-handling.md`: `null`・型付きの結果・`throw` の使い分けと、どのレイヤーが何を扱うか
 - `testing.md`: インメモリの Repository、`*.db.test.ts`
 - `database.md`: Drizzle のテーブル、`withSafeDatabaseErrors`
 - `ui.md`: Base UI 上の shadcn/ui

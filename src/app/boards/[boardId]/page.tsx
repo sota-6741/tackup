@@ -1,10 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { getBoard } from "@/di/board";
 import { getSession } from "@/modules/auth/presentation/session";
-import type { Board } from "@/modules/board/domain/board";
 import { BoardHeader } from "@/modules/board/presentation/board-header";
 import { RememberLastBoard } from "@/modules/board/presentation/remember-last-board";
-import { NotFoundError } from "@/shared/domain/errors";
 
 export default async function BoardPage({
   params,
@@ -13,10 +11,9 @@ export default async function BoardPage({
   if (!session) redirect("/sign-in");
 
   const { boardId } = await params;
-  const board = await getBoardOrNotFound({
-    boardId,
-    userId: session.user.id,
-  });
+  const result = await getBoard({ boardId, userId: session.user.id });
+  if (!result.ok) notFound();
+  const { board } = result;
 
   return (
     <div className="flex flex-col gap-8 px-6 py-8">
@@ -27,19 +24,4 @@ export default async function BoardPage({
       </p>
     </div>
   );
-}
-
-async function getBoardOrNotFound({
-  boardId,
-  userId,
-}: {
-  boardId: string;
-  userId: string;
-}): Promise<Board> {
-  try {
-    return await getBoard({ boardId, userId });
-  } catch (error) {
-    if (error instanceof NotFoundError) notFound();
-    throw error;
-  }
 }
