@@ -23,20 +23,13 @@ function newKey() {
 
 test("署名付きの URL でアップロードし、署名付きの URL で取得できる", async () => {
   const key = newKey();
-  const uploadUrl = await storage.createUploadUrl({
+  const { url, headers } = await storage.createUploadUrl({
     key,
     contentType: "application/pdf",
     size: pdf.length,
   });
 
-  const upload = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      "content-type": "application/pdf",
-      [CONTENT_LENGTH_RANGE_HEADER]: `${pdf.length},${pdf.length}`,
-    },
-    body: pdf,
-  });
+  const upload = await fetch(url, { method: "PUT", headers, body: pdf });
   expect(upload.status).toBe(200);
 
   const download = await fetch(await storage.createDownloadUrl(key));
@@ -45,13 +38,12 @@ test("署名付きの URL でアップロードし、署名付きの URL で取�
 });
 
 test("アップロードの URL は、種類とサイズと有効期限を署名に含める", async () => {
-  const url = new URL(
-    await storage.createUploadUrl({
-      key: newKey(),
-      contentType: "application/pdf",
-      size: 1234,
-    }),
-  );
+  const { url: uploadUrl } = await storage.createUploadUrl({
+    key: newKey(),
+    contentType: "application/pdf",
+    size: 1234,
+  });
+  const url = new URL(uploadUrl);
 
   expect(url.searchParams.get("X-Goog-SignedHeaders")).toBe(
     `content-type;host;${CONTENT_LENGTH_RANGE_HEADER}`,
@@ -59,6 +51,19 @@ test("アップロードの URL は、種類とサイズと有効期限を署名
   expect(url.searchParams.get("X-Goog-Expires")).toBe(
     String(SIGNED_URL_EXPIRES_IN_SECONDS),
   );
+});
+
+test("アップロードのときに付けるヘッダーとして、署名した種類とサイズを返す", async () => {
+  const { headers } = await storage.createUploadUrl({
+    key: newKey(),
+    contentType: "application/pdf",
+    size: 1234,
+  });
+
+  expect(headers).toEqual({
+    "content-type": "application/pdf",
+    [CONTENT_LENGTH_RANGE_HEADER]: "1234,1234",
+  });
 });
 
 test("取得の URL は、有効期限を署名に含める", async () => {

@@ -25,7 +25,12 @@ export type CreateOriginalUploadUrlInput = {
 };
 
 export type CreateOriginalUploadUrlResult =
-  | { ok: true; uploadUrl: string; key: string }
+  | {
+      ok: true;
+      uploadUrl: string;
+      uploadHeaders: Record<string, string>;
+      key: string;
+    }
   | { ok: false; reason: "board_not_found" | "forbidden" | OriginalFileError };
 
 export function makeCreateOriginalUploadUrl({
@@ -46,11 +51,11 @@ export function makeCreateOriginalUploadUrl({
     if (!file.ok) return file;
 
     const key = generateUploadKey();
-    const uploadUrl = await fileStorage.createUploadUrl({
+    const { url, headers } = await fileStorage.createUploadUrl({
       key,
       contentType: file.contentType,
       size: file.size,
     });
-    return { ok: true, uploadUrl, key };
+    return { ok: true, uploadUrl: url, uploadHeaders: headers, key };
   };
 }

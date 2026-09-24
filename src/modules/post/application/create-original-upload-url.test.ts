@@ -10,13 +10,14 @@ import { makeCreateOriginalUploadUrl } from "./create-original-upload-url";
 
 const KEY = "pending/test-key";
 const UPLOAD_URL = "https://storage.example.com/upload";
+const UPLOAD_HEADERS = { "content-type": "application/pdf" };
 
 function makeFakeFileStorage() {
   const uploadUrlRequests: CreateUploadUrlInput[] = [];
   const fileStorage: FileStorage = {
     async createUploadUrl(input) {
       uploadUrlRequests.push(input);
-      return UPLOAD_URL;
+      return { url: UPLOAD_URL, headers: UPLOAD_HEADERS };
     },
     async createDownloadUrl() {
       throw new Error("このテストでは使わない");
@@ -51,7 +52,7 @@ async function setup() {
 }
 
 test.each<Role>(["admin", "poster"])(
-  "%s のメンバーにはアップロード URL とキーを返す",
+  "%s のメンバーにはアップロード URL・ヘッダー・キーを返す",
   async (role) => {
     const { createOriginalUploadUrl, uploadUrlRequests, board, addMember } =
       await setup();
@@ -64,7 +65,12 @@ test.each<Role>(["admin", "poster"])(
       size: 1000,
     });
 
-    expect(result).toEqual({ ok: true, uploadUrl: UPLOAD_URL, key: KEY });
+    expect(result).toEqual({
+      ok: true,
+      uploadUrl: UPLOAD_URL,
+      uploadHeaders: UPLOAD_HEADERS,
+      key: KEY,
+    });
     expect(uploadUrlRequests).toEqual([
       { key: KEY, contentType: "application/pdf", size: 1000 },
     ]);
