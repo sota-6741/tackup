@@ -14,7 +14,7 @@ const unitOfWork = makeDrizzleUnitOfWork(db, (executor) => ({
   boardRepository: makeDrizzleBoardRepository(executor),
 }));
 
-const checkBoardAccess = makeCheckBoardAccess({ boardRepository });
+export const checkBoardAccess = makeCheckBoardAccess({ boardRepository });
 
 export const createBoard = makeCreateBoard({ unitOfWork, generateInviteToken });
 
