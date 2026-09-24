@@ -52,16 +52,18 @@ bun run dev
 
 ローカルのエミュレーターは署名を検証しないので、「サイズ・種類が違うアップロードが拒否されるか」「期限切れ・署名なしの取得が拒否されるか」は、本物のバケットでしか確かめられない。これを CI（`gcs` ジョブ）から確かめる。
 
-1. **本番とは別の GCP プロジェクト**を作り、テスト用のバケットを作る（「公開アクセスの防止」を有効に）。
+GCP を初めて使う場合は、そのまま実行できる手順を [docs/gcp-setup.md](docs/gcp-setup.md) にまとめている。以下はその要約。
+
+1. **本番とは別の GCP プロジェクト**を作り、テスト用のバケットを作る（「公開アクセスの防止」を有効に。無料枠の対象の `us-central1` に作る）。Workload Identity 連携に使う `sts.googleapis.com` などの API も有効にする。
 2. バケットに「1日で自動削除」のライフサイクルを設定する（テストのファイルが残らないようにする）。
 3. テスト用のサービスアカウントを作り、**そのバケットだけ**に `roles/storage.objectUser` と、自分自身への `roles/iam.serviceAccountTokenCreator` を付ける。ほかの権限は付けない。
-4. Workload Identity 連携（プールとプロバイダ）を作り、**このリポジトリからのみ**に限定する条件を必ず付ける（`assertion.repository == 'sota-6741/tackup'`）。ここを空にすると、誰のリポジトリからでも接続できてしまう。
+4. Workload Identity 連携（プールとプロバイダ）を作り、**このリポジトリからのみ**に限定する条件を必ず付ける（`assertion.repository_id == '1368881595'`）。ここを空にすると、誰のリポジトリからでも接続できてしまう。名前（`sota-6741/tackup`）は他人が作り直せるので、変わらない数値の ID で絞る。
 5. GitHub 側の principal を、テスト用のサービスアカウントに `roles/iam.workloadIdentityUser` でバインドする。これがないと認証できない（3 の `roles/iam.serviceAccountTokenCreator` は署名のための権限で、こちらの代わりにはならない）。
 
    ```bash
    gcloud iam service-accounts add-iam-policy-binding <サービスアカウントのメールアドレス> \
      --role=roles/iam.workloadIdentityUser \
-     --member="principalSet://iam.googleapis.com/projects/<プロジェクト番号>/locations/global/workloadIdentityPools/<プール名>/attribute.repository/sota-6741/tackup"
+     --member="principalSet://iam.googleapis.com/projects/<プロジェクト番号>/locations/global/workloadIdentityPools/<プール名>/attribute.repository_id/1368881595"
    ```
 
 6. GitHub のリポジトリの変数（Variables。シークレットではない）に次を設定すると、`gcs` ジョブが動き出す。
