@@ -5,7 +5,7 @@ CI から本物の Cloud Storage に対してテストするための、開発�
 このテストで確かめるのは、ローカルのエミュレーターでは確かめられないこと（署名と違うサイズ・種類のアップロードが拒否される、期限切れ・署名なしの取得が拒否される）。
 
 - 所要時間：30分〜1時間
-- 費用：無料枠の範囲（保存 5GB/月、読み書きの操作も月数万回まで無料）。ただし**請求先アカウントの登録は必要**
+- 費用：Cloud Storage の無料枠の範囲（米国の一部のリージョンで、保存 5GB/月、読み書きの操作も月数万回まで無料）。そのため、テスト用のバケットは無料枠の対象の `us-central1` に作る。ただし**請求先アカウントの登録は必要**
 - パソコンへのインストールは不要（ブラウザの Cloud Shell を使う）
 
 本番用のプロジェクトは、デプロイするときに別に作る。この手順は**開発・テスト専用**。
@@ -43,26 +43,35 @@ CI から本物の Cloud Storage に対してテストするための、開発�
 PROJECT_ID="<1 で控えたプロジェクト ID>"
 BUCKET="tackup-ci-$(date +%s)"   # 世界で重複しない名前にする
 REPO="sota-6741/tackup"
+REPO_ID=$(curl -s "https://api.github.com/repos/$REPO" | jq .id)   # 名前ではなく、変わらない数値の ID で接続元を絞る
 SA="tackup-ci"
 
 gcloud config set project "$PROJECT_ID"
 echo "バケット名: $BUCKET"   # 控える
+echo "リポジトリ ID: $REPO_ID"   # 数字が表示されることを確かめる
 ```
 
 ## 3. 必要な API を有効にする
 
 ```bash
-gcloud services enable storage.googleapis.com iamcredentials.googleapis.com
+gcloud services enable \
+  storage.googleapis.com \
+  iam.googleapis.com \
+  cloudresourcemanager.googleapis.com \
+  iamcredentials.googleapis.com \
+  sts.googleapis.com
 ```
 
 - `storage.googleapis.com`：Cloud Storage 本体
+- `iam.googleapis.com`・`cloudresourcemanager.googleapis.com`：サービスアカウントと Workload Identity 連携の作成・権限の設定に使う
 - `iamcredentials.googleapis.com`：**鍵ファイルなしで署名付き URL を作るために必要**。これを忘れると、テストが実行時に失敗する
+- `sts.googleapis.com`：GitHub Actions のトークンを GCP のトークンに交換する（Workload Identity 連携）。これを忘れると、CI の認証が失敗する
 
 ## 4. テスト用のバケットを作る
 
 ```bash
 gcloud storage buckets create "gs://$BUCKET" \
-  --location=asia-northeast1 \
+  --location=us-central1 \
   --uniform-bucket-level-access \
   --public-access-prevention
 ```
@@ -128,19 +137,21 @@ gcloud iam workload-identity-pools providers create-oidc "tackup" \
   --location="global" \
   --workload-identity-pool="github" \
   --display-name="tackup repo" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" \
-  --attribute-condition="assertion.repository == '$REPO'" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository_id=assertion.repository_id" \
+  --attribute-condition="assertion.repository_id == '$REPO_ID'" \
   --issuer-uri="https://token.actions.githubusercontent.com"
 ```
 
 > 条件（`--attribute-condition`）を付けないと、**ほかの人のリポジトリからも接続できてしまう**。必ず付ける。
+>
+> リポジトリ名（`sota-6741/tackup`）ではなく数値の ID で絞るのは、名前が再利用されうるため。リポジトリやアカウントを消したあとに、他人が同じ名前で作り直すと、名前で絞った条件は通ってしまう。ID は作り直しても同じにならない。
 
 このリポジトリから、上のサービスアカウントとして動くことを許可する。
 
 ```bash
 gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
   --role="roles/iam.workloadIdentityUser" \
-  --member="principalSet://iam.googleapis.com/$POOL_ID/attribute.repository/$REPO"
+  --member="principalSet://iam.googleapis.com/$POOL_ID/attribute.repository_id/$REPO_ID"
 ```
 
 最後に、GitHub に設定する値を表示する。
@@ -188,8 +199,8 @@ gh variable set GCS_TEST_BUCKET --body "<バケット名>"
 | 症状 | 原因の見当 |
 | -- | -- |
 | `gcs` ジョブが動かない（skip） | GitHub の変数が3つそろっていない。fork からの PR でも動かない（仕様） |
-| 認証で失敗する | 6 のバインド（`roles/iam.workloadIdentityUser`）か、プロバイダの条件のリポジトリ名を確認 |
-| `SERVICE_DISABLED` | 3 の `iamcredentials.googleapis.com` が有効になっていない |
+| 認証で失敗する | 6 のバインド（`roles/iam.workloadIdentityUser`）か、プロバイダの条件のリポジトリ ID（`$REPO_ID` が空でなかったか）を確認 |
+| `SERVICE_DISABLED` | 3 の API のどれかが有効になっていない。エラーに出ている API 名（`sts.googleapis.com`・`iamcredentials.googleapis.com` など）を確認 |
 | 署名で `Permission denied` | 5 の「自分自身への `roles/iam.serviceAccountTokenCreator`」が付いていない |
 | アップロードが 403 | テストの期待どおり（拒否のテスト）か、バケット名の設定ミス |
 
