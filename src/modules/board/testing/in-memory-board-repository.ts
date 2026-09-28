@@ -66,6 +66,17 @@ export function makeInMemoryBoardRepository() {
     );
   }
 
+  async function findActiveInviteToken(
+    boardId: string,
+  ): Promise<InviteToken | null> {
+    return (
+      inviteTokens.find(
+        (inviteToken) =>
+          inviteToken.boardId === boardId && inviteToken.revokedAt === null,
+      ) ?? null
+    );
+  }
+
   const repository: BoardRepository = {
     create,
     addMember,
@@ -73,6 +84,7 @@ export function makeInMemoryBoardRepository() {
     findById,
     findAllByUserId,
     findMember,
+    findActiveInviteToken,
   };
 
   return { repository, boards, members, inviteTokens };

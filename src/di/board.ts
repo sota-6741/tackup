@@ -5,6 +5,7 @@ import { makeGetBoard } from "@/modules/board/application/get-board";
 import { makeListMyBoards } from "@/modules/board/application/list-my-boards";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
 import { generateInviteToken } from "@/modules/board/infrastructure/generate-invite-token";
+import { appBaseUrl } from "@/shared/infrastructure/app-url";
 import { db } from "@/shared/infrastructure/db";
 import { makeDrizzleUnitOfWork } from "@/shared/infrastructure/drizzle-unit-of-work";
 
@@ -22,4 +23,8 @@ export const listMyBoards = makeListMyBoards({ boardRepository });
 
 export const findLandingBoard = makeFindLandingBoard({ boardRepository });
 
-export const getBoard = makeGetBoard({ boardRepository, checkBoardAccess });
+export const getBoard = makeGetBoard({
+  boardRepository,
+  checkBoardAccess,
+  appBaseUrl,
+});

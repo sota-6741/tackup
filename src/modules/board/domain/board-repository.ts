@@ -1,5 +1,6 @@
 import type { Board } from "./board";
 import type { BoardMember, Role } from "./board-member";
+import type { InviteToken } from "./invite-token";
 
 export type CreateBoardData = {
   name: string;
@@ -25,4 +26,6 @@ export interface BoardRepository {
   /** 掲示板を作った順ではなく、所属した日時（BoardMember.createdAt）の新しい順に返す。 */
   findAllByUserId(userId: string): Promise<Board[]>;
   findMember(boardId: string, userId: string): Promise<BoardMember | null>;
+  /** 失効していない（`revokedAt` が `null` の）招待リンクを返す。有効な招待リンクは掲示板ごとに1つまで。 */
+  findActiveInviteToken(boardId: string): Promise<InviteToken | null>;
 }

@@ -144,3 +144,27 @@ test("同じ掲示板に有効な招待リンクを2つ追加するとエラー�
     repository.addInviteToken({ boardId: board.id, token: "token-2" }),
   ).rejects.toThrow();
 });
+
+test("失効していない招待リンクだけを返す", async () => {
+  const board = await repository.create({ name: "A", isPublic: true });
+  await testDb.insert(inviteToken).values([
+    { boardId: board.id, token: "token-old", revokedAt: new Date() },
+    { boardId: board.id, token: "token-new" },
+  ]);
+
+  expect(await repository.findActiveInviteToken(board.id)).toMatchObject({
+    boardId: board.id,
+    token: "token-new",
+    revokedAt: null,
+  });
+});
+
+test("有効な招待リンクがなければ null を返す", async () => {
+  const board = await repository.create({ name: "A", isPublic: true });
+  await testDb
+    .insert(inviteToken)
+    .values({ boardId: board.id, token: "token-old", revokedAt: new Date() });
+
+  expect(await repository.findActiveInviteToken(board.id)).toBeNull();
+  expect(await repository.findActiveInviteToken("missing-board")).toBeNull();
+});
