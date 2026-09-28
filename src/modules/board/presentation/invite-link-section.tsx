@@ -55,6 +55,8 @@ export function InviteLinkSection({
   }
 
   function changeDialogOpen(open: boolean) {
+    // 再発行中に Esc などで閉じると、失敗したときの理由が見えなくなるため閉じさせない。
+    if (!open && pending) return;
     setDialogOpen(open);
     if (open) setReissueError(null);
   }
