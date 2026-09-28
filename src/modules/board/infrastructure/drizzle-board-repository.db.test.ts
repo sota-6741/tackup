@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { expect, test } from "vitest";
 import { user } from "@/modules/auth/infrastructure/schema";
 import { DatabaseError } from "@/shared/infrastructure/database-error";
@@ -167,4 +168,60 @@ test("有効な招待リンクがなければ null を返す", async () => {
 
   expect(await repository.findActiveInviteToken(board.id)).toBeNull();
   expect(await repository.findActiveInviteToken("missing-board")).toBeNull();
+});
+
+test("掲示板の有効な招待リンクを失効させ、他の掲示板の招待リンクは変えない", async () => {
+  const board = await repository.create({ name: "A", isPublic: true });
+  const otherBoard = await repository.create({ name: "B", isPublic: true });
+  await repository.addInviteToken({ boardId: board.id, token: "token-a" });
+  await repository.addInviteToken({ boardId: otherBoard.id, token: "token-b" });
+
+  await repository.revokeActiveInviteToken(board.id);
+
+  const [revoked] = await testDb
+    .select()
+    .from(inviteToken)
+    .where(eq(inviteToken.token, "token-a"));
+  expect(revoked.revokedAt).toBeInstanceOf(Date);
+  expect(await repository.findActiveInviteToken(board.id)).toBeNull();
+  expect(await repository.findActiveInviteToken(otherBoard.id)).toMatchObject({
+    token: "token-b",
+  });
+});
+
+test("すでに失効している招待リンクの失効日時は上書きしない", async () => {
+  const board = await repository.create({ name: "A", isPublic: true });
+  const revokedAt = new Date("2026-01-01T00:00:00Z");
+  await testDb
+    .insert(inviteToken)
+    .values({ boardId: board.id, token: "token-old", revokedAt });
+  await repository.addInviteToken({ boardId: board.id, token: "token-new" });
+
+  await repository.revokeActiveInviteToken(board.id);
+
+  const [old] = await testDb
+    .select()
+    .from(inviteToken)
+    .where(eq(inviteToken.token, "token-old"));
+  expect(old.revokedAt).toEqual(revokedAt);
+});
+
+test("有効な招待リンクがなくても、失効はエラーにならない", async () => {
+  const board = await repository.create({ name: "A", isPublic: true });
+
+  await expect(
+    repository.revokeActiveInviteToken(board.id),
+  ).resolves.toBeUndefined();
+});
+
+test("失効させたあとは、同じ掲示板に新しい招待リンクを追加できる", async () => {
+  const board = await repository.create({ name: "A", isPublic: true });
+  await repository.addInviteToken({ boardId: board.id, token: "token-old" });
+
+  await repository.revokeActiveInviteToken(board.id);
+  await repository.addInviteToken({ boardId: board.id, token: "token-new" });
+
+  expect(await repository.findActiveInviteToken(board.id)).toMatchObject({
+    token: "token-new",
+  });
 });

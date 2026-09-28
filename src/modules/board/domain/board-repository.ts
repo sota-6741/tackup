@@ -28,4 +28,6 @@ export interface BoardRepository {
   findMember(boardId: string, userId: string): Promise<BoardMember | null>;
   /** 失効していない（`revokedAt` が `null` の）招待リンクを返す。有効な招待リンクは掲示板ごとに1つまで。 */
   findActiveInviteToken(boardId: string): Promise<InviteToken | null>;
+  /** 掲示板の有効な招待リンクを失効させる。すでに失効している招待リンクの `revokedAt` は変えない。有効な招待リンクがなければ何もしない。 */
+  revokeActiveInviteToken(boardId: string): Promise<void>;
 }

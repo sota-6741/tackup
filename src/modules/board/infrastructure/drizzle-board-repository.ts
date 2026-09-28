@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Board } from "@/modules/board/domain/board";
 import type { BoardMember } from "@/modules/board/domain/board-member";
 import type {
@@ -77,6 +77,16 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     return found ?? null;
   }
 
+  /** 失効の時刻は、created_at の既定値と同じく DB の時計で記録する。 */
+  async function revokeActiveInviteToken(boardId: string): Promise<void> {
+    await db
+      .update(inviteToken)
+      .set({ revokedAt: sql`now()` })
+      .where(
+        and(eq(inviteToken.boardId, boardId), isNull(inviteToken.revokedAt)),
+      );
+  }
+
   return withSafeDatabaseErrors({
     create,
     addMember,
@@ -85,5 +95,6 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     findAllByUserId,
     findMember,
     findActiveInviteToken,
+    revokeActiveInviteToken,
   });
 }

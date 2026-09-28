@@ -77,6 +77,15 @@ export function makeInMemoryBoardRepository() {
     );
   }
 
+  async function revokeActiveInviteToken(boardId: string): Promise<void> {
+    const now = new Date();
+    for (const [index, inviteToken] of inviteTokens.entries()) {
+      if (inviteToken.boardId === boardId && inviteToken.revokedAt === null) {
+        inviteTokens[index] = { ...inviteToken, revokedAt: now };
+      }
+    }
+  }
+
   const repository: BoardRepository = {
     create,
     addMember,
@@ -85,6 +94,7 @@ export function makeInMemoryBoardRepository() {
     findAllByUserId,
     findMember,
     findActiveInviteToken,
+    revokeActiveInviteToken,
   };
 
   return { repository, boards, members, inviteTokens };
