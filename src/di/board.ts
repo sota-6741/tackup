@@ -3,6 +3,7 @@ import { makeCreateBoard } from "@/modules/board/application/create-board";
 import { makeFindLandingBoard } from "@/modules/board/application/find-landing-board";
 import { makeGetBoard } from "@/modules/board/application/get-board";
 import { makeListMyBoards } from "@/modules/board/application/list-my-boards";
+import { makeReissueInviteToken } from "@/modules/board/application/reissue-invite-token";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
 import { generateInviteToken } from "@/modules/board/infrastructure/generate-invite-token";
 import { appBaseUrl } from "@/shared/infrastructure/app-url";
@@ -26,5 +27,12 @@ export const findLandingBoard = makeFindLandingBoard({ boardRepository });
 export const getBoard = makeGetBoard({
   boardRepository,
   checkBoardAccess,
+  appBaseUrl,
+});
+
+export const reissueInviteToken = makeReissueInviteToken({
+  unitOfWork,
+  checkBoardAccess,
+  generateInviteToken,
   appBaseUrl,
 });
