@@ -212,6 +212,9 @@ test("有効な招待リンクがなくても、失効はエラーにならな�
   await expect(
     repository.revokeActiveInviteToken(board.id),
   ).resolves.toBeUndefined();
+  await expect(
+    repository.revokeActiveInviteToken("missing-board"),
+  ).resolves.toBeUndefined();
 });
 
 test("失効させたあとは、同じ掲示板に新しい招待リンクを追加できる", async () => {

@@ -79,6 +79,7 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
 
   /** 失効の時刻は、created_at の既定値と同じく DB の時計で記録する。 */
   async function revokeActiveInviteToken(boardId: string): Promise<void> {
+    if (!isUuid(boardId)) return;
     await db
       .update(inviteToken)
       .set({ revokedAt: sql`now()` })
