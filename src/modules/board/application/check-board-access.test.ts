@@ -14,14 +14,15 @@ async function setup() {
   return { checkBoardAccess, repository, members, board };
 }
 
-test("許可されたロールを持つメンバーは ok になる", async () => {
+test("許可されたロールを持つメンバーは ok になり、メンバー情報を返す", async () => {
   const { checkBoardAccess, members, board } = await setup();
-  members.push({
+  const member = {
     boardId: board.id,
     userId: "user-1",
     role: "admin",
     createdAt: new Date(),
-  });
+  } as const;
+  members.push(member);
 
   await expect(
     checkBoardAccess({
@@ -29,17 +30,18 @@ test("許可されたロールを持つメンバーは ok になる", async () =
       userId: "user-1",
       roles: ["admin"],
     }),
-  ).resolves.toEqual({ ok: true });
+  ).resolves.toEqual({ ok: true, member });
 });
 
 test("許可されたロールが複数あるとき、いずれかを持てば ok になる", async () => {
   const { checkBoardAccess, members, board } = await setup();
-  members.push({
+  const member = {
     boardId: board.id,
     userId: "user-1",
     role: "poster",
     createdAt: new Date(),
-  });
+  } as const;
+  members.push(member);
 
   await expect(
     checkBoardAccess({
@@ -47,7 +49,7 @@ test("許可されたロールが複数あるとき、いずれかを持てば o
       userId: "user-1",
       roles: ["admin", "poster"],
     }),
-  ).resolves.toEqual({ ok: true });
+  ).resolves.toEqual({ ok: true, member });
 });
 
 test("許可されたロールを持たないメンバーは forbidden になる", async () => {
