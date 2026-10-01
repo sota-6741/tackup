@@ -43,6 +43,7 @@ jobs:
       - run: bun run db:migrate
       - run: bun run build
       - run: bunx playwright install --with-deps chromium
+      - run: bun run test:browser
       - run: bun run test:e2e
 
   gcs:

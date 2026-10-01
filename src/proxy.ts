@@ -21,12 +21,17 @@ function requiresSignIn(request: NextRequest): boolean {
   return pathname === "/boards" || pathname.startsWith("/boards/");
 }
 
-/** style-src の 'unsafe-inline' は、サーバーで描画する style 属性（サイドバーの幅など）に必要。style-src に nonce を入れると 'unsafe-inline' が無視されるので入れない。 */
+/**
+ * style-src の 'unsafe-inline' は、サーバーで描画する style 属性（サイドバーの幅など）に必要。style-src に nonce を入れると 'unsafe-inline' が無視されるので入れない。
+ * 'wasm-unsafe-eval' は、pdf.js が PDF の中の画像（JPEG 2000 など）を WASM で展開するのに必要。WASM のコンパイルだけを許し、eval は許さない。
+ * worker-src を書かないと script-src の 'strict-dynamic' を受け継ぎ、nonce を付けられない pdf.js の worker が動かない。
+ */
 function contentSecurityPolicy(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   const directives = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`,
+    "worker-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https://lh3.googleusercontent.com",
     "font-src 'self'",

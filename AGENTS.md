@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # コマンド
 
-- 変更を終える前に `bun run check`（型チェック・lint・ユニットテスト）を実行する。infrastructure・DB・ファイルストレージを変えたときは `bun run test:db` と `bun run test:storage`（または `bun run check:all`）も実行する。PostgreSQL は `bun run db:up` で、Cloud Storage のエミュレーターは `bun run storage:up` のあと `bun run storage:setup` で用意する。
+- 変更を終える前に `bun run check`（型チェック・lint・ユニットテスト）を実行する。infrastructure・DB・ファイルストレージを変えたときは `bun run test:db` と `bun run test:storage`（または `bun run check:all`）も実行する。PostgreSQL は `bun run db:up` で、Cloud Storage のエミュレーターは `bun run storage:up` のあと `bun run storage:setup` で用意する。ブラウザでしか動かないコード（pdf.js・canvas）を変えたときは `bun run test:browser` も実行する。
 
 # 仕様書
 
