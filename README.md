@@ -32,6 +32,13 @@ bun run dev
 
 - 承認済みのリダイレクト URI: `http://localhost:3000/api/auth/callback/google`
 
+### Google を通さずにサインインする（開発時だけ）
+
+`.env` に `DEV_SIGN_IN=true` を書くと、`bun run dev` のときだけ、サインイン画面に「開発用ユーザーでサインイン」が出ます。押すと、決まった開発用ユーザー（`dev@tackup.invalid`）としてログインします。Google の認証情報を用意していないときは、`GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` に適当な値（`dev` など）を入れてください。
+
+- 有効になるのは、`NODE_ENV` が `development`（`next dev`）で、かつ `DEV_SIGN_IN=true` のときだけです。本番ビルド（`next build` → `next start`）では、環境変数を立てても有効になりません。CI の e2e が、本番ビルドに対してこれを確かめます。
+- e2e のテストは、同じ仕組み（`e2e/support/sign-in.ts` の `signIn`）で、テストごとに新しいユーザーとしてログインします。作ったユーザーと掲示板は、接続先の DB に残ります。
+
 ## 本番に出すとき
 
 - **回数制限に使う IP のヘッダー**：Better Auth のログインの回数制限（本番だけ有効、記録は DB の `rate_limit` テーブル）は、`X-Forwarded-For` からクライアントの IP を取る。ホスティングによって信頼できるヘッダーが違うので、`src/modules/auth/infrastructure/auth.ts` の `advanced.ipAddress`（`ipAddressHeaders` または `trustedProxies`）を合わせて設定する。IP が取れないと、全員が1つの枠を共有してしまう。

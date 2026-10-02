@@ -28,6 +28,8 @@ jobs:
       BETTER_AUTH_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: ci
       GOOGLE_CLIENT_SECRET: ci
+      # 本番ビルドでは立てても有効にならないことを、e2e で確かめるために立てる
+      DEV_SIGN_IN: "true"
       STORAGE_BUCKET: tackup
       STORAGE_API_ENDPOINT: http://127.0.0.1:4443
     steps:
