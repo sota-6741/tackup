@@ -1,9 +1,17 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
+import { allowPublicView } from "@/di/rate-limiter";
+import { PUBLIC_VIEW_RATE_LIMIT } from "@/shared/domain/rate-limiter";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (requiresSignIn(request) && !getSessionCookie(request)) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+  if (isPublicView(request) && !(await allowPublicView(request.headers))) {
+    return new NextResponse("Too Many Requests", {
+      status: 429,
+      headers: { "Retry-After": String(PUBLIC_VIEW_RATE_LIMIT.windowSeconds) },
+    });
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -14,6 +22,11 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", policy);
   return response;
+}
+
+/** ログインなしで開ける経路。ページの中からは HTTP ステータスを 429 にできないので、回数の制限はここでかける。 */
+function isPublicView(request: NextRequest): boolean {
+  return request.nextUrl.pathname.startsWith("/b/");
 }
 
 function requiresSignIn(request: NextRequest): boolean {
