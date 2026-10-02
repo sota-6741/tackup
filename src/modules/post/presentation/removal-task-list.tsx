@@ -3,6 +3,7 @@ import type { RemovalTaskView } from "@/modules/post/application/list-removal-ta
 import { buttonVariants } from "@/shared/presentation/components/ui/button";
 import { formatOverdue } from "./format-overdue";
 import { LocalDateTime } from "./local-date-time";
+import { RemovePostButton } from "./remove-post-button";
 
 type RemovalTaskListProps = {
   tasks: RemovalTaskView[];
@@ -55,6 +56,7 @@ export function RemovalTaskList({
                 {formatOverdue({ expiresAt: task.expiresAt, now })}
               </p>
             </div>
+            <RemovePostButton publicId={task.publicId} title={task.title} />
           </li>
         ))}
       </ul>

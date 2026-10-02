@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { RemovalTaskList } from "./removal-task-list";
+
+vi.mock("./actions", () => ({ removePostAction: vi.fn() }));
 
 const task = {
   publicId: "public-1",
@@ -37,6 +39,9 @@ test("サムネイル・掲示物詳細へのリンク・掲示終了・期限�
     "2026-10-01T00:00:00.000Z",
   );
   expect(screen.getByText("3日超過")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "撤去済みにする" }),
+  ).toBeInTheDocument();
 });
 
 test("続きがあれば、続きのページへのリンクを表示する", () => {

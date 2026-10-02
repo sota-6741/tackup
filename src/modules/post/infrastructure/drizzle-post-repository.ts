@@ -17,6 +17,7 @@ import type {
   ExpiredPost,
   FindExpiredInput,
   FindPublishedInput,
+  MarkRemovedInput,
   PostRepository,
 } from "@/modules/post/domain/post-repository";
 import { withSafeDatabaseErrors } from "@/shared/infrastructure/database-error";
@@ -109,6 +110,20 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
     return found.filter(hasExpiresAt);
   }
 
+  async function markRemoved({
+    id,
+    removedAt,
+    removedBy,
+  }: MarkRemovedInput): Promise<boolean> {
+    // 状態の確認と書き換えを 1 つの UPDATE で行う。同時に押されても、記録は先の 1 回だけ残る。
+    const updated = await db
+      .update(post)
+      .set({ status: "removed", removedAt, removedBy })
+      .where(and(eq(post.id, id), eq(post.status, "published")))
+      .returning({ id: post.id });
+    return updated.length > 0;
+  }
+
   async function findByPublicId(publicId: string): Promise<Post | null> {
     if (!PUBLIC_ID_PATTERN.test(publicId)) return null;
     const [found] = await db
@@ -124,6 +139,7 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
     sumFileSizeByBoardId,
     findPublished,
     findExpired,
+    markRemoved,
     findByPublicId,
   });
 }

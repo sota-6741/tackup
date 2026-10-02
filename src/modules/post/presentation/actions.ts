@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createUploadUrls, registerPost } from "@/di/post";
+import { createUploadUrls, registerPost, removePost } from "@/di/post";
 import { getSession } from "@/modules/auth/presentation/session";
 import type {
   CreateUploadUrlsResult,
   UploadTarget,
 } from "@/modules/post/application/create-upload-urls";
 import type { RegisterPostResult } from "@/modules/post/application/register-post";
+import type { RemovePostResult } from "@/modules/post/application/remove-post";
 import { ORIGINAL_FILE_MAX_SIZE } from "@/modules/post/domain/original-file";
 import type { RateLimited } from "@/shared/domain/rate-limiter";
 import { RATE_LIMITED_MESSAGE } from "@/shared/presentation/lib/messages";
@@ -134,5 +135,39 @@ export async function registerPostAction(
   }
 
   revalidatePath(`/boards/${boardId}`);
+  return { ok: true };
+}
+
+export type RemovePostActionResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+const REMOVE_POST_ERROR_MESSAGES: Record<
+  Extract<RemovePostResult | RateLimited, { ok: false }>["reason"],
+  string
+> = {
+  rate_limited: RATE_LIMITED_MESSAGE,
+  post_not_found:
+    "掲示物が見つかりません。画面を読み込み直して、もう一度お試しください。",
+  post_not_removable: "この掲示物は撤去済みにできません。",
+};
+
+export async function removePostAction(
+  publicId: unknown,
+): Promise<RemovePostActionResult> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  if (typeof publicId !== "string") {
+    return { ok: false, error: REMOVE_POST_ERROR_MESSAGES.post_not_found };
+  }
+
+  const result = await removePost({ publicId, userId: session.user.id });
+  if (!result.ok) {
+    return { ok: false, error: REMOVE_POST_ERROR_MESSAGES[result.reason] };
+  }
+
+  revalidatePath(`/boards/${result.boardId}/removals`);
+  revalidatePath(`/boards/${result.boardId}`);
+  revalidatePath(`/posts/${publicId}`);
   return { ok: true };
 }

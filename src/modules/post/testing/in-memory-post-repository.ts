@@ -9,6 +9,7 @@ import type {
   ExpiredPost,
   FindExpiredInput,
   FindPublishedInput,
+  MarkRemovedInput,
   PostRepository,
 } from "@/modules/post/domain/post-repository";
 
@@ -75,6 +76,17 @@ export function makeInMemoryPostRepository() {
       .slice(0, limit);
   }
 
+  async function markRemoved({
+    id,
+    removedAt,
+    removedBy,
+  }: MarkRemovedInput): Promise<boolean> {
+    const post = posts.find((item) => item.id === id);
+    if (post?.status !== "published") return false;
+    Object.assign(post, { status: "removed", removedAt, removedBy });
+    return true;
+  }
+
   async function findByPublicId(publicId: string): Promise<Post | null> {
     return posts.find((post) => post.publicId === publicId) ?? null;
   }
@@ -85,6 +97,7 @@ export function makeInMemoryPostRepository() {
     sumFileSizeByBoardId,
     findPublished,
     findExpired,
+    markRemoved,
     findByPublicId,
   };
 

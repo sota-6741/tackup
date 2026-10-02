@@ -14,6 +14,7 @@ import { makeListPublishedPosts } from "@/modules/post/application/list-publishe
 import { makeListRemovalTasks } from "@/modules/post/application/list-removal-tasks";
 import { makeRecordPostView } from "@/modules/post/application/record-post-view";
 import { makeRegisterPost } from "@/modules/post/application/register-post";
+import { makeRemovePost } from "@/modules/post/application/remove-post";
 import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
 import { makeDrizzleViewLogRepository } from "@/modules/post/infrastructure/drizzle-view-log-repository";
 import { generatePublicId } from "@/modules/post/infrastructure/generate-public-id";
@@ -80,6 +81,11 @@ export const listRemovalTasks = makeListRemovalTasks({
   fileStorage,
   now: () => new Date(),
 });
+
+export const removePost = withRateLimit(
+  makeRemovePost({ checkBoardAccess, postRepository, now: () => new Date() }),
+  { rateLimiter, rule: WRITE_RATE_LIMIT },
+);
 
 /** 見てよいかの確認そのもの。確認した結果を使う use case に渡して使う。 */
 const findAccessiblePost = makeFindAccessiblePost({
