@@ -111,3 +111,18 @@ test("メンバーでない人には、台帳を 404 にする", async ({
   const response = await otherPage.goto(`${boardUrl}/posts`);
   expect(response?.status()).toBe(404);
 });
+
+test("台帳の続きのページに何もなければ、最初のページへ戻す", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  const boardUrl = await createBoard(page);
+
+  await page.goto(
+    `${boardUrl}/posts?after=1700000000000_00000000-0000-4000-8000-000000000001`,
+  );
+
+  await expect(page).toHaveURL(`${boardUrl}/posts`);
+  await expect(page.getByText("まだ掲示物はありません")).toBeVisible();
+});

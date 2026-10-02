@@ -24,6 +24,10 @@ export default async function PostLedgerPage({
     }),
   ]);
   if (!result.ok || !ledger.ok) notFound();
+  // 続きのページが空になった（前のページを開いたあとに、掲示開始を変えたなど）ときは、最初のページへ戻す。
+  if (ledger.isContinuation && ledger.posts.length === 0) {
+    redirect(`/boards/${boardId}/posts`);
+  }
   const { board } = result;
 
   return (
