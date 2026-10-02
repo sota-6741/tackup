@@ -4,33 +4,56 @@ import { CheckIcon, Share2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/shared/presentation/components/ui/button";
 
-const COPIED_DURATION_MS = 2000;
+const MESSAGE_DURATION_MS = 2000;
+
+type Outcome = "copied" | "failed";
+
+const MESSAGES: Record<Outcome, string> = {
+  copied: "URL をコピーしました",
+  failed: "URL をコピーできませんでした",
+};
+
+/** 利用者が共有をやめたときも、共有できたときと同じに扱う。共有の機能がない・使えないときは例外になる。 */
+async function shareWithBrowser(data: ShareData): Promise<void> {
+  try {
+    await navigator.share(data);
+  } catch (error) {
+    // `DOMException` が `Error` を継承していない環境があるので、名前だけで見分ける。
+    if ((error as { name?: unknown } | null)?.name === "AbortError") return;
+    throw error;
+  }
+}
 
 /** ブラウザの共有の機能を使う。使えないブラウザでは、このページの URL をコピーする。 */
 export function ShareButton({ title }: { title: string }) {
-  const [copied, setCopied] = useState(false);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
 
   useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), COPIED_DURATION_MS);
+    if (!outcome) return;
+    const timer = setTimeout(() => setOutcome(null), MESSAGE_DURATION_MS);
     return () => clearTimeout(timer);
-  }, [copied]);
+  }, [outcome]);
 
   async function share() {
     const url = window.location.href;
-    if (navigator.share) {
-      // 利用者が共有をやめたときも例外になる。何もしない。
-      await navigator.share({ title, url }).catch(() => {});
+    try {
+      await shareWithBrowser({ title, url });
       return;
+    } catch {
+      // 共有の機能を使えないときは、下で URL をコピーする。
     }
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
+    try {
+      await navigator.clipboard.writeText(url);
+      setOutcome("copied");
+    } catch {
+      setOutcome("failed");
+    }
   }
 
   return (
     <Button type="button" variant="outline" onClick={share}>
-      {copied ? <CheckIcon /> : <Share2Icon />}
-      {copied ? "URL をコピーしました" : "共有する"}
+      {outcome === "copied" ? <CheckIcon /> : <Share2Icon />}
+      <span aria-live="polite">{outcome ? MESSAGES[outcome] : "共有する"}</span>
     </Button>
   );
 }

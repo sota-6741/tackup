@@ -381,8 +381,8 @@ src/app/b/[inviteToken]/page.tsx   [Server] listPublicBoardPosts。失敗なら 
 | 操作 | 動作 |
 | -- | -- |
 | PDF を開く | 原本が PDF のときだけ。`/posts/{publicId}/original` を別のタブで開く |
-| 保存する | `/posts/{publicId}/original?download=1`。タイトルに拡張子を付けたファイル名で保存させる（ファイル名に使えない文字は `_` に置き換える） |
-| 共有する | ブラウザの共有の機能（`navigator.share`）で、タイトルと URL を渡す。使えないブラウザでは URL をコピーし、「URL をコピーしました」と出す |
+| 保存する | `/posts/{publicId}/original?download=1`。タイトルに拡張子を付けたファイル名で保存させる（ファイル名に使えない文字は `_` に置き換える。日本語が文字化けしないよう、`filename*=UTF-8''…` の形で渡す） |
+| 共有する | ブラウザの共有の機能（`navigator.share`）で、タイトルと URL を渡す。共有の機能がない・失敗したときは URL をコピーし、「URL をコピーしました」と出す。コピーもできなければ「URL をコピーできませんでした」と出す。利用者が共有をやめたときは何もしない |
 
 `/posts/{publicId}/original` は Route Handler。ページと同じ判定で見てよいかを確かめ、その場で発行した署名付きの URL へ移動させる（302、`Cache-Control: no-store`）。ページに原本の URL を直接置くと、開いたまま 5 分たつと使えなくなるため。見せないときは 404、ログインが要るときはサインイン画面へ移動する。
 

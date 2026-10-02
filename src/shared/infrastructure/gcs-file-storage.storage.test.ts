@@ -172,11 +172,11 @@ test("ファイルを消せる。ないファイルを消してもエラーに�
 
 test("保存用の URL には、ファイル名を付けて保存させる指定が入る", async () => {
   const url = new URL(
-    await storage.createSaveUrl({ key: newKey(), fileName: "夏祭り.pdf" }),
+    await storage.createSaveUrl({ key: newKey(), fileName: "夏祭り(1).pdf" }),
   );
 
-  const disposition = url.searchParams.get("response-content-disposition");
-  expect(disposition).toContain("attachment");
-  expect(disposition).toContain("夏祭り.pdf");
+  expect(url.searchParams.get("response-content-disposition")).toBe(
+    `attachment; filename*=UTF-8''${encodeURIComponent("夏祭り")}%281%29.pdf`,
+  );
   expect(url.searchParams.get("X-Goog-Signature")).not.toBeNull();
 });
