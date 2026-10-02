@@ -11,3 +11,4 @@ paths:
   - `*.storage.test.ts`: ローカルのエミュレーターに対して動かす（`bun run test:storage`。`@/shared/testing/test-storage` の `testStorageClient` を使う）。正常系と、署名付き URL の中身を確かめる。
   - `*.gcs.test.ts`: CI で開発用の実バケットに対して動かす（`bun run test:gcs`。`GCS_TEST_BUCKET` と GCP の認証情報が要る）。エミュレーターは署名を検証しないので、違うサイズ・種類の拒否、期限切れの URL、署名なしの読み取りはこちらでテストする。
 - テスト名は日本語で書く。
+- ブラウザでしか動かないコード（pdf.js・canvas でのサムネイル生成など）は、`*.browser.test.ts` で Vitest のブラウザモード（Playwright の Chromium）で動かす（`bun run test:browser`）。jsdom には canvas の描画がない。テスト用のファイルはコミットせず、`modules/post/testing/original-files.ts` でテストの中で作る。

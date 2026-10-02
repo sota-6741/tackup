@@ -16,6 +16,7 @@
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/.vitest/
 
 # next.js
 /.next/
@@ -52,3 +53,6 @@ CLAUDE.local.md
 
 # ローカルの署名用の使い捨ての鍵（storage:setup が生成）
 .gcs-dev-key.json
+
+# pdf.js の worker と描画用のデータ（postinstall が node_modules からコピーする）
+/public/pdfjs/

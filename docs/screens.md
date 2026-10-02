@@ -50,6 +50,7 @@
 | — | メンバー向けレイアウト（サイドバー） | `/boards` 配下すべて | レイアウト |
 | S5 | 掲示板作成 | `/boards/new` | 画面 |
 | S2 | 掲示板ボード（メンバー向け、枠のみ） | `/boards/{boardId}` | 画面 |
+| S4 | 掲示物登録（ステップ3では仮の画面） | `/boards/{boardId}/posts/new` | 画面 |
 | — | 404 | 該当なし | 画面 |
 
 ---
@@ -256,6 +257,51 @@ src/app/boards/new/page.tsx                  [Server] 見出しと CreateBoardFo
 src/app/boards/[boardId]/page.tsx            [Server] getBoard。失敗なら 404
 ├ BoardHeader                                [Server] modules/board/presentation
 └ RememberLastBoard                          [Client] modules/board/presentation（Cookie を書く。何も表示しない）
+```
+
+---
+
+## S4 掲示物登録（ステップ3は仮の画面）`/boards/{boardId}/posts/new`
+
+要件 9。ステップ3では、サムネイルの生成を実際のブラウザで確かめるための仮の画面にする。アップロード・掲示期間・登録はステップ4で足し、この画面を掲示物登録のフォームに育てる。掲示板ボードのヘッダーからの導線もステップ4で足すので、それまでは URL を直接開く。
+
+```
+┌─────────────────────────────┐
+│ 掲示物を登録                  │
+│                              │
+│ 原本                          │
+│ [ファイルを選択]               │
+│ PDF・JPEG・PNG・WebP（20MB まで）│
+│                              │
+│ ┌──────────┐                 │
+│ │ サムネイル │                 │
+│ └──────────┘                 │
+│ 565×800・176KB・230ms         │
+└─────────────────────────────┘
+```
+
+### サムネイル
+
+- PDF は pdf.js で 1 ページ目を描画する。画像は原本を縮小する。
+- 長辺を 800px にし、WebP（品質 0.8）で作る。WebP に書き出せないブラウザでは `canvas.toBlob` が PNG を返すので、サムネイルの種類は `blob.type` で確かめる。このときの扱い（別の形式で作り直すか、PNG のまま保存するか）は、アップロードを作るステップ4で決める。
+- 作ったサムネイルの幅と高さも返す（ステップ5の masonry で縦横比に使う）。
+
+### 状態
+
+| 状態 | 見せ方 |
+| -- | -- |
+| 形式・サイズが許可されていない（`parseOriginalFile` の `reason`） | 入力欄の下に理由に応じた文言を出す |
+| 作成中 | 入力欄を無効にし、「サムネイルを作成中…」を出す |
+| PDF・画像として読めない（`pdf_unreadable`・`image_unreadable`） | 入力欄の下に文言を出す |
+| 想定外の失敗（worker を読み込めないなど） | `error.tsx` の汎用のエラー画面を出す |
+| 作成できた | サムネイルと、幅×高さ・大きさ・かかった時間を出す（動作確認用。ステップ4で見直す） |
+
+### 部品構成
+
+```
+src/app/boards/[boardId]/posts/new/page.tsx  [Server] getBoard。失敗なら 404
+└ ThumbnailPreview                           [Client] modules/post/presentation
+   └ createThumbnail                         modules/post/presentation（PDF は pdf.js、画像は canvas）
 ```
 
 ---
