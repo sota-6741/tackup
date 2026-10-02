@@ -1,0 +1,1 @@
+CREATE INDEX "post_expired_idx" ON "post" USING btree ("board_id","expires_at","id") WHERE "post"."status" = 'published';

@@ -1,10 +1,13 @@
 import {
+  isExpired,
   isPublished,
   type Post,
   type PostCursor,
 } from "@/modules/post/domain/post";
 import type {
   CreatePostData,
+  ExpiredPost,
+  FindExpiredInput,
   FindPublishedInput,
   PostRepository,
 } from "@/modules/post/domain/post-repository";
@@ -56,6 +59,22 @@ export function makeInMemoryPostRepository() {
       .slice(0, limit);
   }
 
+  async function findExpired({
+    boardId,
+    now,
+    limit,
+    after,
+  }: FindExpiredInput): Promise<ExpiredPost[]> {
+    const key = (post: { expiresAt: Date; id: string }) =>
+      `${String(post.expiresAt.getTime()).padStart(15, "0")}_${post.id}`;
+    return posts
+      .filter((post): post is ExpiredPost => post.expiresAt !== null)
+      .filter((post) => post.boardId === boardId && isExpired(post, now))
+      .filter((post) => !after || key(post) > key(after))
+      .sort((a, b) => (key(a) < key(b) ? -1 : 1))
+      .slice(0, limit);
+  }
+
   async function findByPublicId(publicId: string): Promise<Post | null> {
     return posts.find((post) => post.publicId === publicId) ?? null;
   }
@@ -65,6 +84,7 @@ export function makeInMemoryPostRepository() {
     countActiveByBoardId,
     sumFileSizeByBoardId,
     findPublished,
+    findExpired,
     findByPublicId,
   };
 

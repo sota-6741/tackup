@@ -11,6 +11,7 @@ import { makeGetPostQrCode } from "@/modules/post/application/get-post-qr-code";
 import { makeListBoardPosts } from "@/modules/post/application/list-board-posts";
 import { makeListPublicBoardPosts } from "@/modules/post/application/list-public-board-posts";
 import { makeListPublishedPosts } from "@/modules/post/application/list-published-posts";
+import { makeListRemovalTasks } from "@/modules/post/application/list-removal-tasks";
 import { makeRecordPostView } from "@/modules/post/application/record-post-view";
 import { makeRegisterPost } from "@/modules/post/application/register-post";
 import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
@@ -71,6 +72,13 @@ export const listBoardPosts = makeListBoardPosts({
 export const listPublicBoardPosts = makeListPublicBoardPosts({
   boardRepository: makeDrizzleBoardRepository(db),
   listPublishedPosts,
+});
+
+export const listRemovalTasks = makeListRemovalTasks({
+  checkBoardAccess,
+  postRepository,
+  fileStorage,
+  now: () => new Date(),
 });
 
 /** 見てよいかの確認そのもの。確認した結果を使う use case に渡して使う。 */

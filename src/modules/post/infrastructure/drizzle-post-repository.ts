@@ -1,5 +1,6 @@
 import {
   and,
+  asc,
   count,
   desc,
   eq,
@@ -13,6 +14,8 @@ import {
 import type { Post } from "@/modules/post/domain/post";
 import type {
   CreatePostData,
+  ExpiredPost,
+  FindExpiredInput,
   FindPublishedInput,
   PostRepository,
 } from "@/modules/post/domain/post-repository";
@@ -34,6 +37,16 @@ function publishedAt(now: Date) {
     lte(post.publishFrom, now),
     or(isNull(post.expiresAt), gt(post.expiresAt, now)),
   );
+}
+
+function hasExpiresAt(found: Post): found is ExpiredPost {
+  return found.expiresAt !== null;
+}
+
+/** 期限切れの掲示物の条件。domain の `isExpired` と同じ決まりを SQL で書く。無期限（NULL）の行は `expires_at <= now` が真にならないので、含まれない。 */
+function expiredAt(now: Date) {
+  // 索引（post_expired_idx）は status = 'published' の行だけを持つ。公開中の条件と同じ理由で、SQL に直接書く。
+  return and(sql`${post.status} = 'published'`, lte(post.expiresAt, now));
 }
 
 export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
@@ -78,6 +91,24 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
       .limit(limit);
   }
 
+  async function findExpired({
+    boardId,
+    now,
+    limit,
+    after,
+  }: FindExpiredInput): Promise<ExpiredPost[]> {
+    const afterCursor =
+      after &&
+      sql`(${post.expiresAt}, ${post.id}) > (${after.expiresAt.toISOString()}::timestamptz, ${after.id}::uuid)`;
+    const found = await db
+      .select()
+      .from(post)
+      .where(and(eq(post.boardId, boardId), expiredAt(now), afterCursor))
+      .orderBy(asc(post.expiresAt), asc(post.id))
+      .limit(limit);
+    return found.filter(hasExpiresAt);
+  }
+
   async function findByPublicId(publicId: string): Promise<Post | null> {
     if (!PUBLIC_ID_PATTERN.test(publicId)) return null;
     const [found] = await db
@@ -92,6 +123,7 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
     countActiveByBoardId,
     sumFileSizeByBoardId,
     findPublished,
+    findExpired,
     findByPublicId,
   });
 }

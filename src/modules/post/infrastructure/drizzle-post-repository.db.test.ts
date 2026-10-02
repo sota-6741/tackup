@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "vitest";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
-import { isPublished } from "@/modules/post/domain/post";
+import { isExpired, isPublished } from "@/modules/post/domain/post";
 import type { CreatePostData } from "@/modules/post/domain/post-repository";
 import {
   NOW,
@@ -246,4 +246,95 @@ test("公開の ID から掲示物を探せる。ない ID と、形の合わな
   expect(await repository.findByPublicId("unknown")).toBeNull();
   expect(await repository.findByPublicId("a\u0000b")).toBeNull();
   expect(await repository.findByPublicId("")).toBeNull();
+});
+
+test("期限切れの掲示物だけを返す。条件は domain の isExpired と同じで、無期限の掲示物は含めない", async () => {
+  const board = await createBoard();
+  for (const {
+    name,
+    status,
+    publishFrom,
+    expiresAt,
+  } of PUBLISH_STATE_EXAMPLES) {
+    await repository.create(
+      postData(board.id, { title: name, status, publishFrom, expiresAt }),
+    );
+  }
+
+  const found = await repository.findExpired({
+    boardId: board.id,
+    now: NOW,
+    limit: 100,
+  });
+
+  const expected = PUBLISH_STATE_EXAMPLES.filter(
+    (example) => example.expired,
+  ).map((example) => example.name);
+  expect(expected.length).toBeGreaterThan(0);
+  expect(found.map((post) => post.title).sort()).toEqual(expected.sort());
+  expect(found.every((post) => isExpired(post, NOW))).toBe(true);
+});
+
+test("ほかの掲示板の期限切れの掲示物は返さない", async () => {
+  const board = await createBoard();
+  const other = await createBoard();
+  await repository.create(postData(other.id));
+
+  const found = await repository.findExpired({
+    boardId: board.id,
+    now: new Date("2026-12-01T00:00:00Z"),
+    limit: 100,
+  });
+
+  expect(found).toEqual([]);
+});
+
+test("期限切れの掲示物を、掲示終了の古い順、同じ日時なら ID の小さい順に返し、続きを重複も抜けもなく取れる", async () => {
+  const board = await createBoard();
+  const sameTime = new Date("2026-10-05T00:00:00Z");
+  const ids = [
+    "00000000-0000-4000-8000-000000000001",
+    "00000000-0000-4000-8000-000000000002",
+    "00000000-0000-4000-8000-000000000003",
+  ];
+  for (const id of [...ids].reverse()) {
+    await repository.create(
+      postData(board.id, { id, publicId: id, expiresAt: sameTime }),
+    );
+  }
+  const newest = await repository.create(
+    postData(board.id, { expiresAt: new Date("2026-10-10T00:00:00Z") }),
+  );
+  const oldest = await repository.create(
+    postData(board.id, { expiresAt: new Date("2026-10-02T00:00:00Z") }),
+  );
+  const now = new Date("2026-10-15T00:00:00Z");
+
+  const first = await repository.findExpired({
+    boardId: board.id,
+    now,
+    limit: 2,
+  });
+  const last = first[first.length - 1];
+  const second = await repository.findExpired({
+    boardId: board.id,
+    now,
+    limit: 2,
+    after: { expiresAt: last.expiresAt, id: last.id },
+  });
+  const secondLast = second[second.length - 1];
+  const third = await repository.findExpired({
+    boardId: board.id,
+    now,
+    limit: 2,
+    after: { expiresAt: secondLast.expiresAt, id: secondLast.id },
+  });
+
+  expect([...first, ...second, ...third].map((post) => post.id)).toEqual([
+    oldest.id,
+    ids[0],
+    ids[1],
+    ids[2],
+    newest.id,
+  ]);
 });

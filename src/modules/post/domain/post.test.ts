@@ -5,6 +5,7 @@ import {
 } from "@/modules/post/testing/publish-state-examples";
 import {
   encodePostCursor,
+  encodeRemovalCursor,
   isExpired,
   isPublished,
   POST_DESCRIPTION_MAX_LENGTH,
@@ -14,6 +15,7 @@ import {
   parsePostExternalUrl,
   parsePostTitle,
   parsePublishPeriod,
+  parseRemovalCursor,
 } from "./post";
 
 test("タイトルは前後の空白を取り除いて受け入れる", () => {
@@ -240,4 +242,24 @@ test.each([
     ok: false,
     reason: "external_url_invalid",
   });
+});
+
+test("撤去タスクの続きの位置は、文字列にして元に戻せる", () => {
+  const cursor = {
+    expiresAt: new Date("2026-10-05T12:34:56.789Z"),
+    id: "3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  };
+
+  expect(parseRemovalCursor(encodeRemovalCursor(cursor))).toEqual(cursor);
+});
+
+test.each([
+  ["空文字", ""],
+  ["ID が UUID でない", "1790000000000_post-1"],
+  [
+    "西暦 10000 年以降の日時",
+    "253402300800000_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  ],
+])("撤去タスクの続きの位置が %s なら null になる", (_, value) => {
+  expect(parseRemovalCursor(value)).toBeNull();
 });
