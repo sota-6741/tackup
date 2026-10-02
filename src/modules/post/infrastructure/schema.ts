@@ -58,6 +58,10 @@ export const post = pgTable(
     index("post_published_idx")
       .on(table.boardId, table.publishFrom, table.id)
       .where(sql`${table.status} = 'published'`),
+    // 撤去タスクの絞り込みと並び順（掲示終了の古い順）に合わせる。
+    index("post_expired_idx")
+      .on(table.boardId, table.expiresAt, table.id)
+      .where(sql`${table.status} = 'published'`),
     check(
       "post_expires_after_publish",
       sql`${table.expiresAt} > ${table.publishFrom}`,

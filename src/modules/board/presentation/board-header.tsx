@@ -1,4 +1,9 @@
-import { GlobeIcon, LockIcon, PlusIcon } from "lucide-react";
+import {
+  ClipboardCheckIcon,
+  GlobeIcon,
+  LockIcon,
+  PlusIcon,
+} from "lucide-react";
 import Link from "next/link";
 import type { Role } from "@/modules/board/domain/board-member";
 import { Badge } from "@/shared/presentation/components/ui/badge";
@@ -38,13 +43,22 @@ export function BoardHeader({
             非公開
           </Badge>
         )}
-        <Link
-          href={`/boards/${boardId}/posts/new`}
-          className={buttonVariants({ className: "ml-auto" })}
-        >
-          <PlusIcon />
-          掲示物を登録
-        </Link>
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Link
+            href={`/boards/${boardId}/removals`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <ClipboardCheckIcon />
+            撤去タスク
+          </Link>
+          <Link
+            href={`/boards/${boardId}/posts/new`}
+            className={buttonVariants()}
+          >
+            <PlusIcon />
+            掲示物を登録
+          </Link>
+        </div>
       </div>
       {inviteUrl && (
         <InviteLinkSection

@@ -178,15 +178,33 @@ export type PostCursor = { publishFrom: Date; id: string };
 const CURSOR_PATTERN =
   /^(\d{1,15})_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
 
+function parseTimeAndId(value: string): { time: Date; id: string } | null {
+  const match = CURSOR_PATTERN.exec(value);
+  if (!match) return null;
+  const time = new Date(Number(match[1]));
+  if (!isPostTime(time)) return null;
+  return { time, id: match[2] };
+}
+
 export function encodePostCursor({ publishFrom, id }: PostCursor): string {
   return `${publishFrom.getTime()}_${id}`;
 }
 
 /** URL から来る値なので、形が合わなければ `null` にする。 */
 export function parsePostCursor(value: string): PostCursor | null {
-  const match = CURSOR_PATTERN.exec(value);
-  if (!match) return null;
-  const publishFrom = new Date(Number(match[1]));
-  if (!isPostTime(publishFrom)) return null;
-  return { publishFrom, id: match[2] };
+  const parsed = parseTimeAndId(value);
+  return parsed && { publishFrom: parsed.time, id: parsed.id };
+}
+
+/** 撤去タスクの続きを取るための位置。並び順（掲示終了の古い順、同じなら ID の小さい順）のキーをそのまま持つ。 */
+export type RemovalCursor = { expiresAt: Date; id: string };
+
+export function encodeRemovalCursor({ expiresAt, id }: RemovalCursor): string {
+  return `${expiresAt.getTime()}_${id}`;
+}
+
+/** URL から来る値なので、形が合わなければ `null` にする。 */
+export function parseRemovalCursor(value: string): RemovalCursor | null {
+  const parsed = parseTimeAndId(value);
+  return parsed && { expiresAt: parsed.time, id: parsed.id };
 }

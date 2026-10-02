@@ -55,6 +55,7 @@
 | S2 | 掲示板ボード（メンバー向け、枠のみ） | `/boards/{boardId}` | 画面 |
 | S4 | 掲示物登録（ステップ3では仮の画面） | `/boards/{boardId}/posts/new` | 画面 |
 | S1 | 掲示物詳細 | `/posts/{publicId}` | 画面 |
+| S3 | 撤去タスク | `/boards/{boardId}/removals` | 画面 |
 | — | 404 | 該当なし | 画面 |
 
 ---
@@ -255,7 +256,7 @@ src/app/boards/new/page.tsx                  [Server] 見出しと CreateBoardFo
 
 | 導線 | 表示条件 | 追加するステップ |
 | -- | -- | -- |
-| 掲示物登録・撤去タスク・台帳 | メンバー | 4・7・8 |
+| 掲示物登録・撤去タスク・台帳 | メンバー | 4・7・8（掲示物登録と撤去タスクは追加済み） |
 | 招待リンクの表示・コピー | 公開掲示板 | 9 |
 | 招待リンクの再発行・掲示板設定・メンバー管理 | admin | 9 |
 
@@ -403,6 +404,46 @@ src/app/posts/[publicId]/page.tsx            [Server] getPostDetail。失敗な�
   └ ShareButton                              [Client]
 src/app/posts/[publicId]/original/route.ts   getPostFileUrl。署名付きの URL へ移動させる
 src/app/posts/[publicId]/qr/route.ts         getPostQrCode。SVG を返す
+```
+
+---
+
+## S3 撤去タスク `/boards/{boardId}/removals`
+
+要件 15・38.5。掲示終了を過ぎたのに、まだ撤去済みになっていない掲示物の一覧。メンバー向けレイアウト（サイドバー）の中に表示する。設計は [design/removal-tasks.md](design/removal-tasks.md)。
+
+```
+┌───────────────────────────────────────────┐
+│ 中野のボード                                │
+│ 撤去タスク                                  │
+│ 掲示終了を過ぎた掲示物です。…                 │
+│ ┌───────────────────────────────────────┐ │
+│ │ ▢ 去年の夏祭り                          │ │
+│ │   掲示終了: 2025年8月1日 0:00           │ │
+│ │   428日超過                            │ │
+│ ├───────────────────────────────────────┤ │
+│ │ ▢ 清掃の案内 …                          │ │
+│ └───────────────────────────────────────┘ │
+│              [続きを見る]                  │
+└───────────────────────────────────────────┘
+```
+
+| 項目 | 内容 |
+| -- | -- |
+| データ | `getBoard({ boardId, userId })` と `listRemovalTasks({ boardId, userId, cursor })` |
+| 開ける人 | その掲示板のメンバー（admin・poster）。メンバーでなければ 404 |
+| 表示する掲示物 | 状態が `published` で、掲示終了を過ぎたもの。無期限の掲示物・撤去済み・下書きは出さない |
+| 並び順 | 掲示終了の古い順 |
+| 見出し | 掲示板名（掲示板ボードへのリンク）と「撤去タスク」（`h1`） |
+| 各行 | サムネイル、タイトル（掲示物詳細へのリンク。先読みはしない）、掲示終了（見ている人のタイムゾーン）、期限超過時間 |
+| 期限超過時間 | いちばん大きい単位だけで出す（「3日超過」「5時間超過」「10分超過」「1分未満の超過」） |
+| 1 件もないとき | 「撤去が必要な掲示物はありません」 |
+| ページ分け | 1 ページ 50 件。掲示板ボードと同じ（`?after={続きの位置}`） |
+
+```
+src/app/boards/[boardId]/removals/page.tsx   [Server] getBoard・listRemovalTasks。失敗なら 404
+└ RemovalTaskList                            modules/post/presentation
+  └ LocalDateTime                            [Client]
 ```
 
 ---

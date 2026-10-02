@@ -1,4 +1,4 @@
-import type { Post, PostCursor } from "./post";
+import type { Post, PostCursor, RemovalCursor } from "./post";
 
 export type CreatePostData = Pick<
   Post,
@@ -32,6 +32,11 @@ export interface PostRepository {
    * `after` を渡すと、その位置より後ろを返す。公開中の条件は domain の `isPublished` と同じ。
    */
   findPublished(input: FindPublishedInput): Promise<Post[]>;
+  /**
+   * `now` の時点で期限切れ（掲示終了を過ぎたのに、まだ撤去済みになっていない）の掲示物を、
+   * 掲示終了の古い順（同じなら ID の小さい順）に、最大 `limit` 件返す。期限切れの条件は domain の `isExpired` と同じ。
+   */
+  findExpired(input: FindExpiredInput): Promise<ExpiredPost[]>;
   /** 公開の URL に使う ID から探す。公開中かどうかは見ない。 */
   findByPublicId(publicId: string): Promise<Post | null>;
 }
@@ -42,3 +47,13 @@ export type FindPublishedInput = {
   limit: number;
   after?: PostCursor;
 };
+
+export type FindExpiredInput = {
+  boardId: string;
+  now: Date;
+  limit: number;
+  after?: RemovalCursor;
+};
+
+/** 期限切れの掲示物には、必ず掲示終了がある。 */
+export type ExpiredPost = Post & { expiresAt: Date };
