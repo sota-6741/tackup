@@ -150,6 +150,44 @@ test("掲示終了を入れずに登録しようとすると、日時を入れ�
   expect(createUploadUrlsAction).not.toHaveBeenCalled();
 });
 
+test("掲示終了が掲示開始より前だと、アップロードせずに理由を表示する", async () => {
+  render(<PostForm boardId="board-1" />);
+  await selectFile(pdf);
+  await screen.findByAltText("サムネイル");
+  fireEvent.change(screen.getByLabelText(/掲示開始/), {
+    target: { value: "2026-10-01T09:00" },
+  });
+  fireEvent.change(screen.getByLabelText(/掲示終了/), {
+    target: { value: "2026-09-30T09:00" },
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "登録する" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "掲示終了は、掲示開始より後の日時にしてください。",
+  );
+  expect(createUploadUrlsAction).not.toHaveBeenCalled();
+});
+
+test("タイトルを空にすると、アップロードせずに理由を表示する", async () => {
+  render(<PostForm boardId="board-1" />);
+  await selectFile(pdf);
+  await screen.findByAltText("サムネイル");
+  fireEvent.change(screen.getByLabelText(/タイトル/), {
+    target: { value: " " },
+  });
+  fireEvent.change(screen.getByLabelText(/掲示終了/), {
+    target: { value: "2099-12-31T23:59" },
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "登録する" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "タイトルを入力してください。",
+  );
+  expect(createUploadUrlsAction).not.toHaveBeenCalled();
+});
+
 test("登録すると、URL を発行し、原本とサムネイルをアップロードしてから登録し、掲示板ボードへ移動する", async () => {
   render(<PostForm boardId="board-1" />);
 

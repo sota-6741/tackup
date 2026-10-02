@@ -8,7 +8,11 @@ import {
   type OriginalFileError,
   parseOriginalFile,
 } from "@/modules/post/domain/original-file";
-import { POST_TITLE_MAX_LENGTH } from "@/modules/post/domain/post";
+import {
+  POST_TITLE_MAX_LENGTH,
+  parsePostTitle,
+  parsePublishPeriod,
+} from "@/modules/post/domain/post";
 import type {
   CreateThumbnailResult,
   ThumbnailError,
@@ -19,6 +23,7 @@ import { Label } from "@/shared/presentation/components/ui/label";
 import { createUploadUrlsAction, registerPostAction } from "./actions";
 import { createThumbnail } from "./create-thumbnail";
 import { datetimeLocalToIso, toDatetimeLocalValue } from "./datetime-local";
+import { POST_INPUT_ERROR_MESSAGES } from "./post-messages";
 import { uploadFile } from "./upload-file";
 
 const MAX_SIZE_MB = ORIGINAL_FILE_MAX_SIZE / 1024 / 1024;
@@ -119,10 +124,24 @@ export function PostForm({ boardId }: { boardId: string }) {
     file: File;
     thumbnail: Thumbnail;
   }) {
+    // サーバーでも同じ決まりを確かめる。ここで先に確かめるのは、登録できない入力のためにアップロードしないため。
+    const postTitle = parsePostTitle(title);
+    if (!postTitle.ok) {
+      setError(POST_INPUT_ERROR_MESSAGES[postTitle.reason]);
+      return;
+    }
     const publishFromIso = datetimeLocalToIso(publishFrom);
     const expiresAtIso = datetimeLocalToIso(expiresAt);
     if (!publishFromIso || !expiresAtIso) {
-      setError("掲示開始と掲示終了の日時を入力してください。");
+      setError(POST_INPUT_ERROR_MESSAGES.period_invalid);
+      return;
+    }
+    const period = parsePublishPeriod({
+      publishFrom: new Date(publishFromIso),
+      expiresAt: new Date(expiresAtIso),
+    });
+    if (!period.ok) {
+      setError(POST_INPUT_ERROR_MESSAGES[period.reason]);
       return;
     }
 
@@ -165,7 +184,7 @@ export function PostForm({ boardId }: { boardId: string }) {
     router.push(`/boards/${boardId}`);
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (original.status !== "ready") {
       setError("原本のファイルを選んでください。");

@@ -46,7 +46,11 @@ jobs:
       - run: bun run build
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:browser
+      # e2e は掲示物の登録でエミュレーターへアップロードするので、アプリ用のバケットと署名用の鍵を用意する
+      - run: bun run storage:setup
       - run: bun run test:e2e
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ./.gcs-dev-key.json
 
   gcs:
     runs-on: ubuntu-latest

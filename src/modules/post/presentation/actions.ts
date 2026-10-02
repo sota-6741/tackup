@@ -11,7 +11,7 @@ import type {
 } from "@/modules/post/application/create-upload-urls";
 import type { RegisterPostResult } from "@/modules/post/application/register-post";
 import { ORIGINAL_FILE_MAX_SIZE } from "@/modules/post/domain/original-file";
-import { POST_TITLE_MAX_LENGTH } from "@/modules/post/domain/post";
+import { POST_INPUT_ERROR_MESSAGES } from "./post-messages";
 
 const MAX_SIZE_MB = ORIGINAL_FILE_MAX_SIZE / 1024 / 1024;
 const UNEXPECTED_INPUT =
@@ -90,10 +90,7 @@ const REGISTER_POST_ERROR_MESSAGES: Record<
 > = {
   board_not_found: FORBIDDEN,
   forbidden: FORBIDDEN,
-  title_empty: "タイトルを入力してください。",
-  title_too_long: `タイトルは${POST_TITLE_MAX_LENGTH}文字以内で入力してください。`,
-  period_invalid: "掲示開始と掲示終了の日時を入力してください。",
-  expires_before_publish: "掲示終了は、掲示開始より後の日時にしてください。",
+  ...POST_INPUT_ERROR_MESSAGES,
   file_invalid:
     "ファイルを確認できませんでした。ファイルを選び直して、もう一度お試しください。",
   post_limit_exceeded: "この掲示板に登録できる掲示物の数の上限に達しています。",

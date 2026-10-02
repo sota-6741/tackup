@@ -17,7 +17,14 @@ services:
 
   storage:
     image: fsouza/fake-gcs-server:1.56.1
-    command: ["-scheme", "http", "-public-host", "127.0.0.1:4443"]
+    # エミュレーターはバケットの CORS の設定を見ない。ブラウザからの PUT に付けるヘッダーは、ここで許可する。
+    command:
+      - "-scheme"
+      - "http"
+      - "-public-host"
+      - "127.0.0.1:4443"
+      - "-cors-headers"
+      - "x-goog-content-length-range"
     ports:
       - "127.0.0.1:4443:4443"
     volumes:
