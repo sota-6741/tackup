@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { eq } from "drizzle-orm";
+import { post } from "../src/modules/post/infrastructure/schema";
 import { makePdfFile } from "../src/modules/post/testing/original-files";
+import { e2eDb } from "./support/db";
 import { signIn } from "./support/sign-in";
 
 test("原本を選んで掲示物を登録すると、掲示板ボードへ戻る", async ({
@@ -36,6 +39,24 @@ test("原本を選んで掲示物を登録すると、掲示板ボードへ戻�
 
   await expect(page).toHaveURL(boardUrl);
   expect(violations).toEqual([]);
+
+  // 掲示物の表示はまだないので、登録されたことは DB で確かめる。
+  const boardId = boardUrl.split("/").at(-1) ?? "";
+  const posts = await e2eDb
+    .select()
+    .from(post)
+    .where(eq(post.boardId, boardId));
+  expect(posts).toEqual([
+    expect.objectContaining({
+      title: "夏祭りのお知らせ",
+      status: "published",
+      originalContentType: "application/pdf",
+      originalKey: `boards/${boardId}/posts/${posts[0]?.id}/original`,
+      thumbnailKey: `boards/${boardId}/posts/${posts[0]?.id}/thumbnail`,
+      thumbnailWidth: 565,
+      thumbnailHeight: 800,
+    }),
+  ]);
 });
 
 test("掲示終了が掲示開始より前だと、理由を表示して登録しない", async ({
@@ -62,4 +83,11 @@ test("掲示終了が掲示開始より前だと、理由を表示して登録�
     page.getByText("掲示終了は、掲示開始より後の日時にしてください。"),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/posts\/new$/);
+
+  const boardId = page.url().split("/").at(-3) ?? "";
+  const posts = await e2eDb
+    .select()
+    .from(post)
+    .where(eq(post.boardId, boardId));
+  expect(posts).toEqual([]);
 });
