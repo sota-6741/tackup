@@ -77,6 +77,14 @@ export function makeInMemoryBoardRepository() {
     );
   }
 
+  async function findByActiveInviteToken(token: string): Promise<Board | null> {
+    const active = inviteTokens.find(
+      (inviteToken) =>
+        inviteToken.token === token && inviteToken.revokedAt === null,
+    );
+    return boards.find((board) => board.id === active?.boardId) ?? null;
+  }
+
   async function revokeActiveInviteToken(boardId: string): Promise<void> {
     const now = new Date();
     for (const [index, inviteToken] of inviteTokens.entries()) {
@@ -95,6 +103,7 @@ export function makeInMemoryBoardRepository() {
     findAllByUserId,
     findMember,
     findActiveInviteToken,
+    findByActiveInviteToken,
     revokeActiveInviteToken,
   };
 

@@ -88,6 +88,15 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     return found ?? null;
   }
 
+  async function findByActiveInviteToken(token: string): Promise<Board | null> {
+    const [found] = await db
+      .select({ board })
+      .from(inviteToken)
+      .innerJoin(board, eq(board.id, inviteToken.boardId))
+      .where(and(eq(inviteToken.token, token), isNull(inviteToken.revokedAt)));
+    return found?.board ?? null;
+  }
+
   /** 失効の時刻は、created_at の既定値と同じく DB の時計で記録する。 */
   async function revokeActiveInviteToken(boardId: string): Promise<void> {
     if (!isUuid(boardId)) return;
@@ -108,6 +117,7 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     findAllByUserId,
     findMember,
     findActiveInviteToken,
+    findByActiveInviteToken,
     revokeActiveInviteToken,
   });
 }

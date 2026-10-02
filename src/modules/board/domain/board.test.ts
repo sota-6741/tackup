@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { BOARD_NAME_MAX_LENGTH, parseBoardName } from "./board";
+import { BOARD_NAME_MAX_LENGTH, isOpenToPublic, parseBoardName } from "./board";
 
 test("掲示板名をそのまま返す", () => {
   expect(parseBoardName("中野のボード")).toEqual({
@@ -31,4 +31,9 @@ test("上限ちょうどの長さは受け入れる", () => {
 test("上限を超える長さは name_too_long になる", () => {
   const name = "あ".repeat(BOARD_NAME_MAX_LENGTH + 1);
   expect(parseBoardName(name)).toEqual({ ok: false, reason: "name_too_long" });
+});
+
+test("公開掲示板だけが、ログインなしで見てよい掲示板になる", () => {
+  expect(isOpenToPublic({ isPublic: true })).toBe(true);
+  expect(isOpenToPublic({ isPublic: false })).toBe(false);
 });
