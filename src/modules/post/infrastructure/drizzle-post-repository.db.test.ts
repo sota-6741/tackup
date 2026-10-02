@@ -434,7 +434,7 @@ test("同時に撤去済みにしても、書き換えるのは 1 回だけ", as
   expect(results.filter(Boolean)).toHaveLength(1);
 });
 
-test("台帳には、状態を問わずその掲示板のすべての掲示物を、掲示開始の新しい順に返し、続きを重複も抜けもなく取れる", async () => {
+test("掲示物の管理の一覧には、状態を問わずその掲示板のすべての掲示物を、掲示開始の新しい順に返し、続きを重複も抜けもなく取れる", async () => {
   const board = await createBoard();
   const other = await createBoard();
   await repository.create(postData(other.id));

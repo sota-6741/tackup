@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBoard } from "@/di/board";
-import { listLedgerPosts } from "@/di/post";
+import { listManagedPosts } from "@/di/post";
 import { getSession } from "@/modules/auth/presentation/session";
-import { PostLedger } from "@/modules/post/presentation/post-ledger";
+import { ManagedPostList } from "@/modules/post/presentation/managed-post-list";
 
-export default async function PostLedgerPage({
+export default async function PostManagementPage({
   params,
   searchParams,
 }: PageProps<"/boards/[boardId]/posts">) {
@@ -15,17 +15,17 @@ export default async function PostLedgerPage({
   const { boardId } = await params;
   const { after } = await searchParams;
   const userId = session.user.id;
-  const [result, ledger] = await Promise.all([
+  const [result, management] = await Promise.all([
     getBoard({ boardId, userId }),
-    listLedgerPosts({
+    listManagedPosts({
       boardId,
       userId,
       cursor: typeof after === "string" ? after : undefined,
     }),
   ]);
-  if (!result.ok || !ledger.ok) notFound();
+  if (!result.ok || !management.ok) notFound();
   // 続きのページが空になった（前のページを開いたあとに、掲示開始を変えたなど）ときは、最初のページへ戻す。
-  if (ledger.isContinuation && ledger.posts.length === 0) {
+  if (management.isContinuation && management.posts.length === 0) {
     redirect(`/boards/${boardId}/posts`);
   }
   const { board } = result;
@@ -39,16 +39,16 @@ export default async function PostLedgerPage({
         >
           {board.name}
         </Link>
-        <h1 className="font-semibold text-2xl tracking-tight">台帳</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">掲示物の管理</h1>
         <p className="text-muted-foreground text-sm">
-          この掲示板のすべての掲示物です。掲示開始の新しい順に並びます。
+          過去の掲示物も含めた、この掲示板のすべての掲示物です。掲示開始の新しい順に並びます。
         </p>
       </header>
-      <PostLedger
-        posts={ledger.posts}
+      <ManagedPostList
+        posts={management.posts}
         nextHref={
-          ledger.nextCursor &&
-          `/boards/${board.id}/posts?after=${encodeURIComponent(ledger.nextCursor)}`
+          management.nextCursor &&
+          `/boards/${board.id}/posts?after=${encodeURIComponent(management.nextCursor)}`
         }
       />
     </div>

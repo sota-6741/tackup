@@ -50,7 +50,7 @@ export function BoardHeader({
             className={buttonVariants({ variant: "outline" })}
           >
             <ListIcon />
-            台帳
+            掲示物の管理
           </Link>
           <Link
             href={`/boards/${boardId}/removals`}

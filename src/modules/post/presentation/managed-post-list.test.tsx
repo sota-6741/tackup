@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import type { LedgerPostView } from "@/modules/post/application/list-ledger-posts";
-import { PostLedger } from "./post-ledger";
+import type { ManagedPostView } from "@/modules/post/application/list-managed-posts";
+import { ManagedPostList } from "./managed-post-list";
 
 vi.mock("./actions", () => ({ removePostAction: vi.fn() }));
 
-function ledgerPost(overrides: Partial<LedgerPostView>): LedgerPostView {
+function managedPost(overrides: Partial<ManagedPostView>): ManagedPostView {
   return {
     publicId: "public-1",
     title: "夏祭りのお知らせ",
@@ -22,7 +22,7 @@ function ledgerPost(overrides: Partial<LedgerPostView>): LedgerPostView {
 }
 
 test("掲示物がなければ、ないことを表示する", () => {
-  render(<PostLedger posts={[]} nextHref={null} />);
+  render(<ManagedPostList posts={[]} nextHref={null} />);
 
   expect(screen.getByText("まだ掲示物はありません")).toBeInTheDocument();
 });
@@ -34,17 +34,17 @@ test.each([
   ["expired", "期限切れ・撤去待ち"],
   ["removed", "撤去済み"],
 ] as const)("状態が %s の掲示物には「%s」と表示する", (state, label) => {
-  render(<PostLedger posts={[ledgerPost({ state })]} nextHref={null} />);
+  render(<ManagedPostList posts={[managedPost({ state })]} nextHref={null} />);
 
   expect(screen.getByText(label)).toBeInTheDocument();
 });
 
 test("タイトルは掲示物詳細へのリンクで、掲示期間を表示する。無期限なら「無期限」と出す", () => {
   render(
-    <PostLedger
+    <ManagedPostList
       posts={[
-        ledgerPost({}),
-        ledgerPost({
+        managedPost({}),
+        managedPost({
           publicId: "public-2",
           title: "清掃の案内",
           expiresAt: null,
@@ -62,10 +62,10 @@ test("タイトルは掲示物詳細へのリンクで、掲示期間を表示�
 
 test("撤去済みにできる掲示物にだけ「撤去済みにする」を出し、撤去済みには撤去の日時を出す", () => {
   const { container } = render(
-    <PostLedger
+    <ManagedPostList
       posts={[
-        ledgerPost({}),
-        ledgerPost({
+        managedPost({}),
+        managedPost({
           publicId: "public-2",
           title: "去年の夏祭り",
           state: "removed",
@@ -88,8 +88,8 @@ test("撤去済みにできる掲示物にだけ「撤去済みにする」を�
 
 test("続きがあれば、続きのページへのリンクを表示する", () => {
   render(
-    <PostLedger
-      posts={[ledgerPost({})]}
+    <ManagedPostList
+      posts={[managedPost({})]}
       nextHref="/boards/board-1/posts?after=cursor"
     />,
   );

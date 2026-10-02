@@ -43,7 +43,7 @@ async function registerPost(
   await expect(page).toHaveURL(boardUrl);
 }
 
-test("台帳には、公開中でない掲示物も状態を付けて表示され、無期限の掲示物を撤去済みにできる", async ({
+test("掲示物の管理には、公開中でない掲示物も状態を付けて表示され、無期限の掲示物を撤去済みにできる", async ({
   page,
   context,
 }) => {
@@ -68,9 +68,11 @@ test("台帳には、公開中でない掲示物も状態を付けて表示さ�
     expiresAt: null,
   });
 
-  await page.getByRole("link", { name: "台帳" }).click();
+  await page.getByRole("link", { name: "掲示物の管理" }).click();
   await expect(page).toHaveURL(`${boardUrl}/posts`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("台帳");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "掲示物の管理",
+  );
   const rows = page.getByRole("listitem").filter({ hasText: "掲示期間" });
   await expect(rows).toHaveCount(3);
   // 掲示開始の新しい順に並ぶ。
@@ -82,7 +84,7 @@ test("台帳には、公開中でない掲示物も状態を付けて表示さ�
   await expect(rows.nth(2)).toContainText("去年の夏祭り");
   await expect(rows.nth(2)).toContainText("期限切れ・撤去待ち");
 
-  // 無期限の掲示物は撤去タスクに出ないので、台帳から撤去済みにする。
+  // 無期限の掲示物は撤去タスクに出ないので、掲示物の管理から撤去済みにする。
   await rows.nth(1).getByRole("button", { name: "撤去済みにする" }).click();
   const dialog = page.getByRole("alertdialog");
   await dialog.getByRole("button", { name: "撤去済みにする" }).click();
@@ -97,7 +99,7 @@ test("台帳には、公開中でない掲示物も状態を付けて表示さ�
   await expect(page.getByText("まだ掲示物はありません")).toBeVisible();
 });
 
-test("メンバーでない人には、台帳を 404 にする", async ({
+test("メンバーでない人には、掲示物の管理の画面を 404 にする", async ({
   page,
   context,
   browser,
@@ -112,7 +114,7 @@ test("メンバーでない人には、台帳を 404 にする", async ({
   expect(response?.status()).toBe(404);
 });
 
-test("台帳の続きのページに何もなければ、最初のページへ戻す", async ({
+test("掲示物の管理の続きのページに何もなければ、最初のページへ戻す", async ({
   page,
   context,
 }) => {

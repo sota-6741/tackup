@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { LedgerPostView } from "@/modules/post/application/list-ledger-posts";
+import type { ManagedPostView } from "@/modules/post/application/list-managed-posts";
 import type { PostDisplayState } from "@/modules/post/domain/post-access";
 import { Badge } from "@/shared/presentation/components/ui/badge";
 import { buttonVariants } from "@/shared/presentation/components/ui/button";
@@ -14,14 +14,14 @@ const STATE_LABELS: Record<PostDisplayState, string> = {
   removed: "撤去済み",
 };
 
-type PostLedgerProps = {
-  posts: LedgerPostView[];
+type ManagedPostListProps = {
+  posts: ManagedPostView[];
   /** 続きのページの URL。続きがなければ `null`。 */
   nextHref: string | null;
 };
 
 /** 掲示板のすべての掲示物を、状態を付けて並べる。サムネイルは、掲示板ボードと同じ理由で遅延読み込みにしない。 */
-export function PostLedger({ posts, nextHref }: PostLedgerProps) {
+export function ManagedPostList({ posts, nextHref }: ManagedPostListProps) {
   if (posts.length === 0) {
     return (
       <p className="py-16 text-center text-muted-foreground text-sm">

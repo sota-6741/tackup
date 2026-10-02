@@ -33,7 +33,7 @@ export function decidePostAccess({
   return isPublished(post, now) ? "allowed" : "not_found";
 }
 
-/** 台帳と掲示物詳細で見せる状態。`Post.status` だけでなく、日時も見て決める。 */
+/** 掲示物の管理と掲示物詳細で見せる状態。`Post.status` だけでなく、日時も見て決める。 */
 export type PostDisplayState =
   | "draft"
   | "upcoming"

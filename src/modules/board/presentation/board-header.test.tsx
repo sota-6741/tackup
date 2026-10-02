@@ -80,7 +80,7 @@ test("admin にだけ再発行のボタンを表示する", () => {
   ).not.toBeInTheDocument();
 });
 
-test("掲示物登録・撤去タスク・台帳の画面へのリンクを表示する", () => {
+test("掲示物登録・撤去タスク・掲示物の管理の画面へのリンクを表示する", () => {
   render(
     <BoardHeader
       boardId="board-1"
@@ -99,7 +99,7 @@ test("掲示物登録・撤去タスク・台帳の画面へのリンクを表�
     "href",
     "/boards/board-1/removals",
   );
-  expect(screen.getByRole("link", { name: "台帳" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "掲示物の管理" })).toHaveAttribute(
     "href",
     "/boards/board-1/posts",
   );
