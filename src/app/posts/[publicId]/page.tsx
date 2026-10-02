@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getPostDetail } from "@/di/post";
+import { after } from "next/server";
+import { getPostDetail, recordPostView } from "@/di/post";
 import { signInPath } from "@/modules/auth/domain/return-path";
 import { getSession } from "@/modules/auth/presentation/session";
 import { PostDetail } from "@/modules/post/presentation/post-detail";
@@ -23,6 +24,9 @@ export default async function PostPage({
     }
     notFound();
   }
+  const { postId } = result;
+  // 応答を返したあとに記録する。失敗しても表示には影響しない（Next.js がエラーをログに出す）。
+  after(() => recordPostView({ postId }));
 
   return <PostDetail post={result.post} />;
 }

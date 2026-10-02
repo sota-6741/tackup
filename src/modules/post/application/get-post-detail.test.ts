@@ -63,13 +63,14 @@ async function setup({
   };
 }
 
-test("公開掲示板の公開中の掲示物は、ログインしていない人にも詳細を返す。内部の ID とキーは含めない", async () => {
+test("公開掲示板の公開中の掲示物は、ログインしていない人にも詳細を返す。画面に渡す形には、内部の ID とキーを含めない", async () => {
   const { getPostDetail } = await setup({ isPublic: true });
 
   const result = await getPostDetail({ publicId: "public-1", userId: null });
 
   expect(result).toEqual({
     ok: true,
+    postId: "post-1",
     post: {
       publicId: "public-1",
       title: "夏祭りのお知らせ",

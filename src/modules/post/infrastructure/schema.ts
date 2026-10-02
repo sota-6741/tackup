@@ -66,3 +66,21 @@ export const post = pgTable(
     check("post_thumbnail_size_positive", sql`${table.thumbnailSize} > 0`),
   ],
 );
+
+/** 掲示物詳細が開かれた記録。だれが開いたかは持たない。 */
+export const viewLog = pgTable(
+  "view_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => post.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // 掲示物ごとに、期間で数える・古い記録を消すための索引。
+    index("view_log_post_id_created_at_idx").on(table.postId, table.createdAt),
+  ],
+);
