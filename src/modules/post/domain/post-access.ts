@@ -51,6 +51,14 @@ export function postDisplayState(
   return isPublished(post, now) ? "published" : "upcoming";
 }
 
+/**
+ * QR コードを出せる状態か。貼り出す前に印刷できるよう、掲示開始前でも出す。
+ * 撤去済みと下書きは、読み取っても一般の人には見せないので出さない。
+ */
+export function canIssueQrCode(state: PostDisplayState): boolean {
+  return state !== "draft" && state !== "removed";
+}
+
 const EXTENSIONS: Record<Post["originalContentType"], string> = {
   "application/pdf": "pdf",
   "image/jpeg": "jpg",

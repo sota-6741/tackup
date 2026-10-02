@@ -349,6 +349,9 @@ src/app/b/[inviteToken]/page.tsx   [Server] listPublicBoardPosts。失敗なら 
 │ [PDF を開く] [保存する] [共有する]          │
 │ 説明文                                     │
 │ ↗ https://example.com/festival            │
+│ ───────────────────────────────────────── │
+│ QR コード                    （メンバーのみ） │
+│ ▣  [QR コードを保存]                        │
 └───────────────────────────────────────────┘
 ```
 
@@ -374,6 +377,7 @@ src/app/b/[inviteToken]/page.tsx   [Server] listPublicBoardPosts。失敗なら 
 | 説明文 | あるときだけ。改行をそのまま出す |
 | 外部リンク | あるときだけ。別のタブで開き、開き元の情報を渡さない（`rel="noopener noreferrer"`） |
 | 掲示板へ戻る | メンバーにだけ出す（`/boards/{boardId}`）。一般閲覧者には、招待リンクを渡さないため出さない |
+| QR コード | メンバーにだけ出す。撤去済みと下書きには出さない（掲示開始前と期限切れには出す）。`/posts/{publicId}/qr` の SVG を `<img>` で表示する |
 | 検索エンジン | `noindex` を付ける |
 | 閲覧の記録 | 掲示物を見せたときに、応答を返したあとで 1 件記録する（`recordPostView`。Next.js の `after`）。メンバーの閲覧も、公開中でない掲示物の閲覧も記録する。404 やサインイン画面への移動、原本を開く・保存する操作は記録しない。記録に失敗しても表示には影響しない |
 
@@ -384,8 +388,11 @@ src/app/b/[inviteToken]/page.tsx   [Server] listPublicBoardPosts。失敗なら 
 | PDF を開く | 原本が PDF のときだけ。`/posts/{publicId}/original` を別のタブで開く |
 | 保存する | `/posts/{publicId}/original?download=1`。タイトルに拡張子を付けたファイル名で保存させる（ファイル名に使えない文字は `_` に置き換える。日本語が文字化けしないよう、`filename*=UTF-8''…` の形で渡す） |
 | 共有する | ブラウザの共有の機能（`navigator.share`）で、タイトルと URL を渡す。共有の機能がない・失敗したときは URL をコピーし、「URL をコピーしました」と出す。コピーもできなければ「URL をコピーできませんでした」と出す。利用者が共有をやめたときは何もしない |
+| QR コードを保存 | `/posts/{publicId}/qr` の SVG を、「{タイトル}-qr.svg」の名前で保存させる |
 
 `/posts/{publicId}/original` は Route Handler。ページと同じ判定で見てよいかを確かめ、その場で発行した署名付きの URL へ移動させる（302、`Cache-Control: no-store`）。ページに原本の URL を直接置くと、開いたまま 5 分たつと使えなくなるため。見せないときは 404、ログインが要るときはサインイン画面へ移動する。
+
+`/posts/{publicId}/qr` も Route Handler。掲示物詳細の URL（`{アプリの URL}/posts/{publicId}`）の QR コードを、サーバーで SVG にして返す（`getPostQrCode`）。メンバーでない・撤去済み・下書きのときは、存在しない掲示物と同じ 404 にする。誤り訂正のレベルは M、余白は 4 マス。
 
 ### 部品構成
 
@@ -395,6 +402,7 @@ src/app/posts/[publicId]/page.tsx            [Server] getPostDetail。失敗な�
   ├ LocalDateTime                            [Client] 日時を見ている人のタイムゾーンで出す
   └ ShareButton                              [Client]
 src/app/posts/[publicId]/original/route.ts   getPostFileUrl。署名付きの URL へ移動させる
+src/app/posts/[publicId]/qr/route.ts         getPostQrCode。SVG を返す
 ```
 
 ---

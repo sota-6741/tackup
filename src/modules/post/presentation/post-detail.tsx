@@ -84,6 +84,8 @@ export function PostDetail({ post }: { post: PostDetailData }) {
         <p className="whitespace-pre-wrap break-words">{post.description}</p>
       )}
 
+      {post.hasQrCode && <QrCode publicId={post.publicId} title={post.title} />}
+
       {post.externalUrl && (
         <a
           href={post.externalUrl}
@@ -96,5 +98,35 @@ export function PostDetail({ post }: { post: PostDetailData }) {
         </a>
       )}
     </article>
+  );
+}
+
+/** 印刷して貼るための QR コード。メンバーにだけ出す。 */
+function QrCode({ publicId, title }: { publicId: string; title: string }) {
+  const path = `/posts/${publicId}/qr`;
+
+  return (
+    <section className="flex flex-col items-start gap-2 border-t pt-6">
+      <h2 className="font-medium">QR コード</h2>
+      <p className="text-muted-foreground text-sm">
+        読み取ると、この掲示物のページが開きます。
+      </p>
+      {/* biome-ignore lint/performance/noImgElement: サーバーで作った SVG をそのまま表示する */}
+      <img
+        src={path}
+        alt="この掲示物の QR コード"
+        width={160}
+        height={160}
+        className="rounded-md border bg-white"
+      />
+      <a
+        href={path}
+        download={`${title}-qr.svg`}
+        className={buttonVariants({ variant: "outline", size: "sm" })}
+      >
+        <DownloadIcon />
+        QR コードを保存
+      </a>
+    </section>
   );
 }

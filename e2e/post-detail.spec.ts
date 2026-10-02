@@ -220,3 +220,41 @@ test("掲示物詳細を開くたびに閲覧が記録され、見せなかっ�
   await page.reload();
   await expect.poll(() => countViews(publicId)).toBe(3);
 });
+
+test("メンバーには QR コードが表示され、ほかの人には表示も取得もできない", async ({
+  page,
+  context,
+  browser,
+}) => {
+  await signIn(context);
+  await createBoardWithPost(page, { isPublic: true });
+  await page.getByRole("link", { name: "夏祭りのお知らせ" }).click();
+  await expect(page).toHaveURL(/\/posts\//);
+  const postUrl = page.url();
+
+  const qrCode = page.getByRole("img", { name: "この掲示物の QR コード" });
+  await expect
+    .poll(() =>
+      qrCode.evaluate(
+        (element: HTMLImageElement) =>
+          element.complete && element.naturalWidth > 0,
+      ),
+    )
+    .toBe(true);
+  const download = page.waitForEvent("download");
+  await page.getByRole("link", { name: "QR コードを保存" }).click();
+  expect((await download).suggestedFilename()).toBe("夏祭りのお知らせ-qr.svg");
+  const response = await context.request.get(`${postUrl}/qr`);
+  expect(response.headers()["content-type"]).toContain("image/svg+xml");
+  expect(await response.text()).toContain("<svg");
+
+  const visitor = await openAsVisitor(browser, postUrl);
+  await expect(
+    visitor.page.getByRole("heading", { level: 1, name: "夏祭りのお知らせ" }),
+  ).toBeVisible();
+  await expect(
+    visitor.page.getByRole("img", { name: "この掲示物の QR コード" }),
+  ).toHaveCount(0);
+  const denied = await visitor.context.request.get(`${postUrl}/qr`);
+  expect(denied.status()).toBe(404);
+});
