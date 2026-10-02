@@ -53,6 +53,15 @@ export type ParsePublishPeriodResult =
   | { ok: true; publishFrom: Date; expiresAt: Date | null }
   | { ok: false; reason: PublishPeriodError };
 
+/** 扱える日時の範囲（1970 年の初めから 9999 年の終わりまで）。この外の日時は、DB や一覧の続きの位置で扱えない。 */
+const POST_TIME_MIN = 0;
+const POST_TIME_MAX = Date.UTC(9999, 11, 31, 23, 59, 59, 999);
+
+function isPostTime(date: Date): boolean {
+  const time = date.getTime();
+  return time >= POST_TIME_MIN && time <= POST_TIME_MAX;
+}
+
 /**
  * `expiresAt` が `null` なら無期限。
  * 過去の日時も受け入れる。すでに貼り出した掲示物を、あとから記録できるようにするため。
@@ -64,13 +73,13 @@ export function parsePublishPeriod({
   publishFrom: Date;
   expiresAt: Date | null;
 }): ParsePublishPeriodResult {
-  if (Number.isNaN(publishFrom.getTime())) {
+  if (!isPostTime(publishFrom)) {
     return { ok: false, reason: "period_invalid" };
   }
   if (expiresAt === null) {
     return { ok: true, publishFrom, expiresAt };
   }
-  if (Number.isNaN(expiresAt.getTime())) {
+  if (!isPostTime(expiresAt)) {
     return { ok: false, reason: "period_invalid" };
   }
   if (expiresAt <= publishFrom) {
@@ -118,14 +127,11 @@ export function encodePostCursor({ publishFrom, id }: PostCursor): string {
   return `${publishFrom.getTime()}_${id}`;
 }
 
-/** 西暦 9999 年の終わり。これより先の日時は、DB が日時として受け付けない書き方になる。 */
-const MAX_CURSOR_TIME = Date.UTC(9999, 11, 31, 23, 59, 59, 999);
-
 /** URL から来る値なので、形が合わなければ `null` にする。 */
 export function parsePostCursor(value: string): PostCursor | null {
   const match = CURSOR_PATTERN.exec(value);
   if (!match) return null;
-  const time = Number(match[1]);
-  if (time > MAX_CURSOR_TIME) return null;
-  return { publishFrom: new Date(time), id: match[2] };
+  const publishFrom = new Date(Number(match[1]));
+  if (!isPostTime(publishFrom)) return null;
+  return { publishFrom, id: match[2] };
 }

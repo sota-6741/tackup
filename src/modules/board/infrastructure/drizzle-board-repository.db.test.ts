@@ -256,3 +256,11 @@ test("有効な招待リンクのトークンから掲示板を探せる。失�
   expect(await repository.findByActiveInviteToken("token-old")).toBeNull();
   expect(await repository.findByActiveInviteToken("token-unknown")).toBeNull();
 });
+
+test.each([
+  ["NUL 文字を含むトークン", "token\u0000"],
+  ["空のトークン", ""],
+  ["長すぎるトークン", "a".repeat(101)],
+])("%s で探しても、エラーにならず null を返す", async (_, token) => {
+  expect(await repository.findByActiveInviteToken(token)).toBeNull();
+});
