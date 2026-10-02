@@ -7,6 +7,8 @@ import { getSession } from "@/modules/auth/presentation/session";
 import type { CreateBoardResult } from "@/modules/board/application/create-board";
 import type { ReissueInviteTokenResult } from "@/modules/board/application/reissue-invite-token";
 import { BOARD_NAME_MAX_LENGTH } from "@/modules/board/domain/board";
+import type { RateLimited } from "@/shared/domain/rate-limiter";
+import { RATE_LIMITED_MESSAGE } from "@/shared/presentation/lib/messages";
 
 export type CreateBoardState = {
   error: string | null;
@@ -17,9 +19,10 @@ export type CreateBoardState = {
 };
 
 const CREATE_BOARD_ERROR_MESSAGES: Record<
-  Extract<CreateBoardResult, { ok: false }>["reason"],
+  Extract<CreateBoardResult | RateLimited, { ok: false }>["reason"],
   string
 > = {
+  rate_limited: RATE_LIMITED_MESSAGE,
   name_empty: "掲示板名を入力してください。",
   name_too_long: `掲示板名は${BOARD_NAME_MAX_LENGTH}文字以内で入力してください`,
 };
@@ -54,9 +57,10 @@ export type ReissueInviteTokenActionResult =
   | { ok: false; error: string };
 
 const REISSUE_INVITE_TOKEN_ERROR_MESSAGES: Record<
-  Extract<ReissueInviteTokenResult, { ok: false }>["reason"],
+  Extract<ReissueInviteTokenResult | RateLimited, { ok: false }>["reason"],
   string
 > = {
+  rate_limited: RATE_LIMITED_MESSAGE,
   board_not_found: "再発行できませんでした。",
   forbidden: "再発行できませんでした。",
   board_not_public: "再発行できませんでした。",

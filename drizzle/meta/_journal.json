@@ -43,6 +43,13 @@
       "when": 1790913625927,
       "tag": "0005_calm_toad",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790929123778,
+      "tag": "0006_loving_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

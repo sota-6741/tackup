@@ -262,5 +262,6 @@ test("登録できなければ理由を表示し、画面を移動しない", as
     "掲示終了は、掲示開始より後の日時にしてください。",
   );
   expect(push).not.toHaveBeenCalled();
-  expect(screen.getByRole("button", { name: "登録する" })).toBeEnabled();
+  // エラーの表示のすぐあとに、送信中の状態が終わってボタンが戻る。
+  expect(await screen.findByRole("button", { name: "登録する" })).toBeEnabled();
 });
