@@ -1,10 +1,9 @@
 import "client-only";
-import type { CreateThumbnailResult } from "@/modules/post/domain/thumbnail";
 import {
-  createCanvas,
-  encodeThumbnail,
+  type CreateThumbnailResult,
   THUMBNAIL_LONG_SIDE,
-} from "./thumbnail-canvas";
+} from "@/modules/post/domain/thumbnail";
+import { createCanvas, encodeThumbnail } from "./thumbnail-canvas";
 
 async function drawScaled(file: File): Promise<HTMLCanvasElement> {
   const bitmap = await createImageBitmap(file);

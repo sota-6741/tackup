@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { THUMBNAIL_MAX_SIZE } from "@/modules/post/domain/thumbnail";
 import {
   makeImageFile,
   makeNoiseJpeg,
@@ -15,7 +16,9 @@ async function expectThumbnailOf(
   if (!result.ok) throw new Error(`サムネイルを作れなかった: ${result.reason}`);
   expect(result.width).toBe(width);
   expect(result.height).toBe(height);
+  expect(result.contentType).toBe("image/webp");
   expect(result.blob.type).toBe("image/webp");
+  expect(result.blob.size).toBeLessThanOrEqual(THUMBNAIL_MAX_SIZE);
 
   const bitmap = await createImageBitmap(result.blob);
   expect(bitmap.width).toBe(width);
