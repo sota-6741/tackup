@@ -74,5 +74,8 @@ export const config = {
         { type: "header", key: "purpose", value: "prefetch" },
       ],
     },
+    // 上の条件は、先読みのヘッダーが付いた要求を proxy に通さない。このヘッダーは誰でも付けられるので、
+    // 回数の制限をかける経路は、ヘッダーに関係なく必ず通す。
+    { source: "/b/:path*" },
   ],
 };

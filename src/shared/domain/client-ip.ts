@@ -11,7 +11,11 @@ export function clientIpFromForwardedFor({
   forwardedFor: string | null;
   trustedProxyCount: number;
 }): string | null {
-  if (!forwardedFor || trustedProxyCount < 1) return null;
+  // 数が整数でないと、`at` が先頭（接続元が自由に書ける値）を返してしまう。
+  if (!Number.isInteger(trustedProxyCount) || trustedProxyCount < 1) {
+    return null;
+  }
+  if (!forwardedFor) return null;
   const addresses = forwardedFor
     .split(",")
     .map((address) => address.trim())

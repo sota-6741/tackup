@@ -1,8 +1,11 @@
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, lt, or, sql } from "drizzle-orm";
 import type { RateLimiter, RateLimitRule } from "@/shared/domain/rate-limiter";
 import { withSafeDatabaseErrors } from "./database-error";
 import type { Db } from "./db";
 import { rateLimitCounter } from "./schema";
+
+/** これより古い枠の記録は消す。どの規則の枠の長さよりも長くしておく（いちばん長い枠は 1 時間）。 */
+const STALE_AFTER_SECONDS = 24 * 60 * 60;
 
 function windowStartOf(now: Date, { windowSeconds }: RateLimitRule): Date {
   const windowMs = windowSeconds * 1000;
@@ -39,15 +42,25 @@ export function makeDrizzleRateLimiter({
       })
       .returning({ count: rateLimitCounter.count });
 
-    // 過ぎた枠の記録が増え続けないよう、同じ利用者の古い枠を消す。
-    await db
-      .delete(rateLimitCounter)
-      .where(
-        and(
-          eq(rateLimitCounter.key, key),
-          lt(rateLimitCounter.windowStart, windowStart),
-        ),
+    // 新しい枠を作ったときに、要らなくなった記録を消す。毎回は消さない（要求のたびに削除を走らせないため）。
+    // - 同じ利用者の、前の枠の記録
+    // - だれの記録でも、十分に古いもの。IP アドレスで数える規則では、一度だけ来た接続元の記録が残り続けるため
+    if (row.count === 1) {
+      const staleBefore = new Date(
+        now().getTime() - STALE_AFTER_SECONDS * 1000,
       );
+      await db
+        .delete(rateLimitCounter)
+        .where(
+          or(
+            and(
+              eq(rateLimitCounter.key, key),
+              lt(rateLimitCounter.windowStart, windowStart),
+            ),
+            lt(rateLimitCounter.windowStart, staleBefore),
+          ),
+        );
+    }
 
     return row.count <= rule.limit;
   }

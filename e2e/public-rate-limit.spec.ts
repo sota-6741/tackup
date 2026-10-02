@@ -31,6 +31,18 @@ test("公開の経路は、同じ接続元から 1 分に上限を超えて開�
   expect(limited.status()).toBe(429);
   expect(limited.headers()["retry-after"]).toBe("60");
 
+  // 先読みのヘッダーは誰でも付けられる。付けても制限を避けられない。
+  const prefetchHeaders: Record<string, string>[] = [
+    { "Next-Router-Prefetch": "1" },
+    { Purpose: "prefetch" },
+  ];
+  for (const header of prefetchHeaders) {
+    const response = await request.get("/b/no-such-token", {
+      headers: { "X-Forwarded-For": ip, ...header },
+    });
+    expect(response.status()).toBe(429);
+  }
+
   // 左側を書き換えても同じ接続元として数える。別の接続元は影響を受けない。
   expect((await open(`198.51.100.1, ${ip}`)).status()).toBe(429);
   expect((await open(randomIp())).status()).toBe(404);

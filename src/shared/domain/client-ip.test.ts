@@ -39,6 +39,13 @@ test.each([
     "信頼できるプロキシがない設定",
     { forwardedFor: "203.0.113.9", trustedProxyCount: 0 },
   ],
+  [
+    "信頼できるプロキシの数が数字でない設定",
+    {
+      forwardedFor: "198.51.100.1, 203.0.113.9",
+      trustedProxyCount: Number.NaN,
+    },
+  ],
 ])("%s ときは null を返す", (_, input) => {
   expect(clientIpFromForwardedFor(input)).toBeNull();
 });

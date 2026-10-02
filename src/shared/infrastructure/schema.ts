@@ -1,4 +1,5 @@
 import {
+  index,
   integer,
   pgTable,
   primaryKey,
@@ -14,5 +15,9 @@ export const rateLimitCounter = pgTable(
     windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
     count: integer("count").notNull(),
   },
-  (table) => [primaryKey({ columns: [table.key, table.windowStart] })],
+  (table) => [
+    primaryKey({ columns: [table.key, table.windowStart] }),
+    // 古い枠の記録をまとめて消すときに使う。
+    index("rate_limit_counter_window_start_idx").on(table.windowStart),
+  ],
 );

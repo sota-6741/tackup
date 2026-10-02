@@ -4,8 +4,10 @@ import { env } from "@/env";
 
 const globalForDb = globalThis as unknown as { client?: postgres.Sql };
 
+// このモジュールは、開発時の再読み込みや、proxy.ts とページのように別々にまとめられたコードから、同じプロセスの中で何度も読み込まれる。
+// 接続を 1 つにそろえないと、読み込まれた数だけ接続プールができる。
 const client = globalForDb.client ?? postgres(env.DATABASE_URL);
-if (process.env.NODE_ENV !== "production") globalForDb.client = client;
+globalForDb.client = client;
 
 export const db = drizzle(client);
 

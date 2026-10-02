@@ -1,0 +1,1 @@
+CREATE INDEX "rate_limit_counter_window_start_idx" ON "rate_limit_counter" USING btree ("window_start");
