@@ -152,10 +152,12 @@ removed
 
 期限切れ状態はステータスとして保存しない。
 
-期限切れかどうかは `expiresAt` と現在時刻から算出する。
+期限切れかどうかは `expiresAt` と現在時刻から算出する。`expiresAt` が未設定（無期限）の掲示物は、期限切れにならない（「10. 掲示期間」）。
 
 ```text
 status === "published"
+AND
+expiresAt が設定されている
 AND
 expiresAt <= now
 ```
