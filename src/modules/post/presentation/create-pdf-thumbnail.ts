@@ -1,12 +1,11 @@
 import "client-only";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import type { CreateThumbnailResult } from "@/modules/post/domain/thumbnail";
-import { loadPdfjs, PDF_DOCUMENT_OPTIONS } from "./pdfjs";
 import {
-  createCanvas,
-  encodeThumbnail,
+  type CreateThumbnailResult,
   THUMBNAIL_LONG_SIDE,
-} from "./thumbnail-canvas";
+} from "@/modules/post/domain/thumbnail";
+import { loadPdfjs, PDF_DOCUMENT_OPTIONS } from "./pdfjs";
+import { createCanvas, encodeThumbnail } from "./thumbnail-canvas";
 
 /** PDF は拡大しても粗くならないので、小さいページも長辺が 800px になるよう拡大する。 */
 async function renderFirstPage(

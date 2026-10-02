@@ -1,10 +1,10 @@
 import "server-only";
 import { checkBoardAccess } from "@/di/board";
-import { makeCreateOriginalUploadUrl } from "@/modules/post/application/create-original-upload-url";
+import { makeCreateUploadUrls } from "@/modules/post/application/create-upload-urls";
 import { generateUploadKey } from "@/modules/post/infrastructure/generate-upload-key";
 import { fileStorage } from "@/shared/infrastructure/storage";
 
-export const createOriginalUploadUrl = makeCreateOriginalUploadUrl({
+export const createUploadUrls = makeCreateUploadUrls({
   checkBoardAccess,
   fileStorage,
   generateUploadKey,

@@ -1,14 +1,20 @@
 import { expect, test } from "vitest";
+import { isUploadKeyOf } from "@/modules/post/domain/upload-key";
 import { generateUploadKey } from "./generate-upload-key";
 
-test("pending/ の下の UUID のキーを返す", () => {
-  expect(generateUploadKey()).toMatch(
-    /^pending\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-  );
+const owner = { boardId: "board-1", userId: "user-1" };
+
+test("掲示板とユーザーを含む、pending/ の下のキーを返す", () => {
+  const key = generateUploadKey(owner);
+
+  expect(key).toMatch(/^pending\/board-1\/user-1\/[0-9a-f-]{36}$/);
+  expect(isUploadKeyOf({ key, ...owner })).toBe(true);
 });
 
 test("呼ぶたびに別のキーを返す", () => {
-  const keys = new Set(Array.from({ length: 100 }, generateUploadKey));
+  const keys = new Set(
+    Array.from({ length: 100 }, () => generateUploadKey(owner)),
+  );
 
   expect(keys.size).toBe(100);
 });
