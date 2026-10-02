@@ -10,8 +10,10 @@ import { makeGetPostFileUrl } from "@/modules/post/application/get-post-file-url
 import { makeListBoardPosts } from "@/modules/post/application/list-board-posts";
 import { makeListPublicBoardPosts } from "@/modules/post/application/list-public-board-posts";
 import { makeListPublishedPosts } from "@/modules/post/application/list-published-posts";
+import { makeRecordPostView } from "@/modules/post/application/record-post-view";
 import { makeRegisterPost } from "@/modules/post/application/register-post";
 import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
+import { makeDrizzleViewLogRepository } from "@/modules/post/infrastructure/drizzle-view-log-repository";
 import { generatePublicId } from "@/modules/post/infrastructure/generate-public-id";
 import { generateUploadKey } from "@/modules/post/infrastructure/generate-upload-key";
 import {
@@ -83,4 +85,8 @@ export const getPostDetail = makeGetPostDetail({
 export const getPostFileUrl = makeGetPostFileUrl({
   findAccessiblePost,
   fileStorage,
+});
+
+export const recordPostView = makeRecordPostView({
+  viewLogRepository: makeDrizzleViewLogRepository(db),
 });

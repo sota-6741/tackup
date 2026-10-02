@@ -1,6 +1,6 @@
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
-import { post } from "../src/modules/post/infrastructure/schema";
+import { post, viewLog } from "../src/modules/post/infrastructure/schema";
 import { makePdfFile } from "../src/modules/post/testing/original-files";
 import { e2eDb } from "./support/db";
 import { signIn } from "./support/sign-in";
@@ -184,4 +184,39 @@ test("公開中でない掲示物の詳細は、メンバーには状態を付�
   expect(visitor.status).toBe(404);
   const original = await visitor.context.request.get(`${postUrl}/original`);
   expect(original.status()).toBe(404);
+});
+
+async function countViews(publicId: string): Promise<number> {
+  const rows = await e2eDb
+    .select({ id: viewLog.id })
+    .from(viewLog)
+    .innerJoin(post, eq(post.id, viewLog.postId))
+    .where(eq(post.publicId, publicId));
+  return rows.length;
+}
+
+test("掲示物詳細を開くたびに閲覧が記録され、見せなかったときは記録されない", async ({
+  page,
+  context,
+  browser,
+}) => {
+  await signIn(context);
+  await createBoardWithPost(page, { isPublic: false });
+  await page.getByRole("link", { name: "夏祭りのお知らせ" }).click();
+  await expect(page).toHaveURL(/\/posts\//);
+  const postUrl = page.url();
+  const publicId = postUrl.split("/").at(-1) ?? "";
+  // 記録は応答のあとに書かれるので、少し待つ。
+  await expect.poll(() => countViews(publicId)).toBe(1);
+
+  await page.reload();
+  await expect.poll(() => countViews(publicId)).toBe(2);
+
+  // 原本を開く・保存するだけでは記録しない。
+  await context.request.get(`${postUrl}/original`, { maxRedirects: 0 });
+  // 非公開の掲示板なので、ログインしていない人には見せない。
+  const visitor = await openAsVisitor(browser, postUrl);
+  await expect(visitor.page).toHaveURL(/\/sign-in/);
+  await page.reload();
+  await expect.poll(() => countViews(publicId)).toBe(3);
 });

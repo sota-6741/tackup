@@ -375,6 +375,7 @@ src/app/b/[inviteToken]/page.tsx   [Server] listPublicBoardPosts。失敗なら 
 | 外部リンク | あるときだけ。別のタブで開き、開き元の情報を渡さない（`rel="noopener noreferrer"`） |
 | 掲示板へ戻る | メンバーにだけ出す（`/boards/{boardId}`）。一般閲覧者には、招待リンクを渡さないため出さない |
 | 検索エンジン | `noindex` を付ける |
+| 閲覧の記録 | 掲示物を見せたときに、応答を返したあとで 1 件記録する（`recordPostView`。Next.js の `after`）。メンバーの閲覧も、公開中でない掲示物の閲覧も記録する。404 やサインイン画面への移動、原本を開く・保存する操作は記録しない。記録に失敗しても表示には影響しない |
 
 ### 操作
 
@@ -389,7 +390,7 @@ src/app/b/[inviteToken]/page.tsx   [Server] listPublicBoardPosts。失敗なら 
 ### 部品構成
 
 ```
-src/app/posts/[publicId]/page.tsx            [Server] getPostDetail。失敗なら 404 かサインイン画面へ
+src/app/posts/[publicId]/page.tsx            [Server] getPostDetail。失敗なら 404 かサインイン画面へ。見せたら recordPostView
 └ PostDetail                                 modules/post/presentation
   ├ LocalDateTime                            [Client] 日時を見ている人のタイムゾーンで出す
   └ ShareButton                              [Client]

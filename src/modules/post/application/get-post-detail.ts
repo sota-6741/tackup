@@ -33,7 +33,8 @@ export type PostDetail = {
 };
 
 export type GetPostDetailResult =
-  | { ok: true; post: PostDetail }
+  /** `postId` は閲覧の記録に使う内部の ID。画面には渡さない。 */
+  | { ok: true; post: PostDetail; postId: string }
   | { ok: false; reason: "post_not_found" | "sign_in_required" };
 
 export function makeGetPostDetail({ findAccessiblePost, fileStorage }: Deps) {
@@ -55,6 +56,7 @@ export function makeGetPostDetail({ findAccessiblePost, fileStorage }: Deps) {
 
     return {
       ok: true,
+      postId: post.id,
       post: {
         publicId: post.publicId,
         title: post.title,

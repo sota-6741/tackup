@@ -71,6 +71,13 @@
       "when": 1790971129988,
       "tag": "0009_slippery_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790974678106,
+      "tag": "0010_wonderful_talos",
+      "breakpoints": true
     }
   ]
 }
