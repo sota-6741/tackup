@@ -64,6 +64,13 @@
       "when": 1790940476825,
       "tag": "0008_thankful_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790971129988,
+      "tag": "0009_slippery_professor_monster",
+      "breakpoints": true
     }
   ]
 }

@@ -43,6 +43,10 @@ bun run dev
 ## 本番に出すとき
 
 - **回数制限に使う IP のヘッダー**：Better Auth のログインの回数制限（本番だけ有効、記録は DB の `rate_limit` テーブル）は、`X-Forwarded-For` からクライアントの IP を取る。ホスティングによって信頼できるヘッダーが違うので、`src/modules/auth/infrastructure/auth.ts` の `advanced.ipAddress`（`ipAddressHeaders` または `trustedProxies`）を合わせて設定する。IP が取れないと、全員が1つの枠を共有してしまう。
+- **公開の経路の回数の制限に使う IP のヘッダー**：招待リンクの掲示板ボード（`/b/…`）は、接続元の IP アドレスごとに 1 分 120 回までに制限する（記録は DB の `rate_limit_counter` テーブル）。IP アドレスは `X-Forwarded-For` の右から `TRUSTED_PROXY_COUNT` 番目から取る。左のほうは接続元が自由に書けるので使わない。
+  - Cloud Run に直接つなぐ構成では、Google のフロントエンドが接続元の IP アドレスを最後に足すので、`1`（既定値）にする。
+  - 前に外部のロードバランサーを置く構成では、ロードバランサーの分だけ増やす（1 つなら `2`）。
+  - 数が合っていないと、全員が 1 つの枠を共有するか、ロードバランサーの IP アドレスで数えてしまう。本番に出したら、実際の `X-Forwarded-For` の並びを確かめる。
 - **本番の DB**：インターネットに公開せず、アプリのサーバーからだけ接続できるようにする（ホスティングの内部ネットワークや、接続元の IP の制限を使う）。パスワードは推測できない長い値にする。`DATABASE_URL` には `?sslmode=require` を付け、DB との通信を暗号化する。
 - **HSTS**：`Strict-Transport-Security` に `includeSubDomains` を付けているので、公開するドメインのサブドメインもすべて HTTPS で配信する。
 - **Google OAuth**：承認済みのリダイレクト URI に `https://<本番のドメイン>/api/auth/callback/google` を追加する。

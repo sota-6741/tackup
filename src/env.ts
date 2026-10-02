@@ -11,6 +11,7 @@ export const env = createEnv({
     STORAGE_BUCKET: z.string().min(1),
     STORAGE_API_ENDPOINT: z.url().optional(),
     DEV_SIGN_IN: z.enum(["true", "false"]).optional(),
+    TRUSTED_PROXY_COUNT: z.coerce.number().int().min(0).default(1),
   },
   client: {},
   experimental__runtimeEnv: {},

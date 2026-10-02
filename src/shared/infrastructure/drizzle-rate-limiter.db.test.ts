@@ -64,6 +64,22 @@ test("次の時間枠になると、また上限まで通り、前の枠の記�
   ]);
 });
 
+test("新しい枠を作るときに、ほかの利用者の分も含めて、1 日より古い記録を消す", async () => {
+  const { rateLimiter, setNow } = setup("2026-10-01T00:00:10Z");
+  await rateLimiter.consume({ rule, subject: "一度だけ来た接続元" });
+  setNow("2026-10-01T12:00:00Z");
+  await rateLimiter.consume({ rule, subject: "半日前の接続元" });
+
+  setNow("2026-10-02T00:01:10Z");
+  await rateLimiter.consume({ rule, subject: "user-1" });
+
+  const rows = await testDb.select().from(rateLimitCounter);
+  expect(rows.map((row) => row.key).sort()).toEqual([
+    "test:user-1",
+    "test:半日前の接続元",
+  ]);
+});
+
 test("別々の接続から同時に数えても、数え漏れない", async () => {
   // testDb は接続が 1 本で、同時に呼んでも順番に実行される。本当に並行させるために、接続を複数持つクライアントを使う。
   const client = postgres(TEST_DATABASE_URL, { max: 8, onnotice: () => {} });
