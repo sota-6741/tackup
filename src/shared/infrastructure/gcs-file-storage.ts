@@ -10,11 +10,9 @@ export const SIGNED_URL_EXPIRES_IN_SECONDS = 5 * 60;
 
 export const CONTENT_LENGTH_RANGE_HEADER = "x-goog-content-length-range";
 
-/** ファイル（またはその世代）がない。412 は、条件にした世代と合わなかったとき。 */
+/** ファイル（またはその世代）がない。 */
 function isMissing(error: unknown): boolean {
-  return (
-    error instanceof ApiError && (error.code === 404 || error.code === 412)
-  );
+  return error instanceof ApiError && error.code === 404;
 }
 
 export function makeGcsFileStorage({
@@ -87,7 +85,8 @@ export function makeGcsFileStorage({
   }
 
   /**
-   * SDK のコピーは `ifSourceGenerationMatch` を渡せないので、コピー元の世代を指定する（`sourceGeneration`）。その世代がなければ失敗するので、同じ条件になる。
+   * SDK のコピーは `ifSourceGenerationMatch` を渡せないので、コピー元の世代を指定する（`sourceGeneration`）。その世代がなければ失敗するので、同じ条件になる。バケットのバージョニングが無効であることが前提（有効だと、上書きされても古い世代が残る）。
+   * 移動先にすでにファイルがあれば、上書きせずに想定外のエラーにする（`ifGenerationMatch: 0`）。
    * コピーのあとの元ファイルの削除に失敗しても、移動は成功として扱う。`pending/` はライフサイクルで消える。
    */
   async function move({
@@ -101,7 +100,9 @@ export function makeGcsFileStorage({
   }): Promise<boolean> {
     const source = storage.bucket(bucket).file(from, { generation });
     try {
-      await source.copy(storage.bucket(bucket).file(to));
+      await source.copy(storage.bucket(bucket).file(to), {
+        preconditionOpts: { ifGenerationMatch: 0 },
+      });
     } catch (error) {
       if (isMissing(error)) return false;
       throw error;

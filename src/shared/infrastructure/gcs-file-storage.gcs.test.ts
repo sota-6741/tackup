@@ -184,3 +184,26 @@ test("読んだあとに上書きされたファイルは移さない", async ()
   expect(await storage.readHead({ key: to, length: 5 })).toBeNull();
   await storage.delete(from);
 });
+
+test("移動先にすでにファイルがあれば、上書きせずに失敗する", async () => {
+  const from = newKey();
+  const to = newKey();
+  for (const key of [from, to]) {
+    const uploadUrl = await storage.createUploadUrl({
+      key,
+      contentType: "application/pdf",
+      size: pdf.length,
+    });
+    expect(await upload(uploadUrl, pdf)).toBe(200);
+  }
+  const head = await storage.readHead({ key: from, length: 5 });
+  if (!head) throw new Error("アップロードしたファイルを読めない");
+
+  await expect(
+    storage.move({ from, to, generation: head.generation }),
+  ).rejects.toMatchObject({ code: 412 });
+
+  expect(await storage.readHead({ key: from, length: 5 })).not.toBeNull();
+  await storage.delete(from);
+  await storage.delete(to);
+});
