@@ -10,6 +10,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     STORAGE_BUCKET: z.string().min(1),
     STORAGE_API_ENDPOINT: z.url().optional(),
+    DEV_SIGN_IN: z.enum(["true", "false"]).optional(),
   },
   client: {},
   experimental__runtimeEnv: {},
