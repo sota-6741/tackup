@@ -31,6 +31,8 @@ export type PublishedPostsPage = {
   posts: PublishedPostView[];
   /** 続きがなければ `null`。 */
   nextCursor: string | null;
+  /** 続きのページか。`cursor` の形が合わずに最初のページを返したときは `false`。 */
+  isContinuation: boolean;
 };
 
 /**
@@ -46,12 +48,13 @@ export function makeListPublishedPosts({
     boardId,
     cursor,
   }: ListPublishedPostsInput): Promise<PublishedPostsPage> {
+    const after = (cursor && parsePostCursor(cursor)) || undefined;
     // 続きがあるかを知るために、1 件多く取る。
     const found = await postRepository.findPublished({
       boardId,
       now: now(),
       limit: POST_PAGE_SIZE + 1,
-      after: (cursor && parsePostCursor(cursor)) || undefined,
+      after,
     });
     const page = found.slice(0, POST_PAGE_SIZE);
     const last = page.at(-1);
@@ -72,6 +75,7 @@ export function makeListPublishedPosts({
         found.length > POST_PAGE_SIZE && last
           ? encodePostCursor({ publishFrom: last.publishFrom, id: last.id })
           : null,
+      isContinuation: after !== undefined,
     };
   };
 }

@@ -46,6 +46,7 @@ test("続きの位置がおかしい URL を開いても、エラーにせず最
   for (const after of ["broken", `999999999999999_${id}`]) {
     const response = await page.goto(`${boardUrl}?after=${after}`);
     expect(response?.status()).toBe(200);
+    await expect(page).toHaveURL(`${boardUrl}?after=${after}`);
     await expect(
       page.getByRole("heading", { level: 1, name: "中野のボード" }),
     ).toBeVisible();

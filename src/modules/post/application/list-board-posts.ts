@@ -41,6 +41,6 @@ export function makeListBoardPosts({
     if (!access.ok) return access;
 
     const page = await listPublishedPosts({ boardId, cursor });
-    return { ok: true, posts: page.posts, nextCursor: page.nextCursor };
+    return { ok: true, ...page };
   };
 }

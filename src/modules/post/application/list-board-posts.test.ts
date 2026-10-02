@@ -16,6 +16,7 @@ const page: PublishedPostsPage = {
     },
   ],
   nextCursor: "next",
+  isContinuation: false,
 };
 
 async function setup({ role }: { role: Role }) {

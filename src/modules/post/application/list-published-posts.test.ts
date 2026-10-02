@@ -58,6 +58,7 @@ test("公開中の掲示物を、画面に渡す形で返す。内部の ID と�
       },
     ],
     nextCursor: null,
+    isContinuation: false,
   });
 });
 
@@ -112,8 +113,10 @@ test("1 ページの件数を超えると続きの位置を返し、それを渡
 
   expect(first.posts).toHaveLength(POST_PAGE_SIZE);
   expect(first.nextCursor).not.toBeNull();
+  expect(first.isContinuation).toBe(false);
   expect(second.posts).toHaveLength(3);
   expect(second.nextCursor).toBeNull();
+  expect(second.isContinuation).toBe(true);
   const publicIds = [...first.posts, ...second.posts].map(
     (post) => post.publicId,
   );
@@ -130,7 +133,7 @@ test("ちょうど 1 ページ分なら、続きの位置は返さない", async
   expect(page.nextCursor).toBeNull();
 });
 
-test("続きの位置の形が合わなければ、最初のページを返す", async () => {
+test("続きの位置の形が合わなければ、最初のページを返し、続きのページとは扱わない", async () => {
   const { listPublishedPosts, addPost } = setup();
   await addPost();
 
@@ -140,4 +143,17 @@ test("続きの位置の形が合わなければ、最初のページを返す",
   });
 
   expect(page.posts).toHaveLength(1);
+  expect(page.isContinuation).toBe(false);
+});
+
+test("続きの位置の先に掲示物がなければ、空の続きのページを返す", async () => {
+  const { listPublishedPosts, addPost } = setup();
+  await addPost();
+
+  const page = await listPublishedPosts({
+    boardId: "board-1",
+    cursor: "1_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  });
+
+  expect(page).toEqual({ posts: [], nextCursor: null, isContinuation: true });
 });
