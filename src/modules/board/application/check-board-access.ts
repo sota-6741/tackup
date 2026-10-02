@@ -1,4 +1,4 @@
-import type { Role } from "@/modules/board/domain/board-member";
+import type { BoardMember, Role } from "@/modules/board/domain/board-member";
 import { hasRole } from "@/modules/board/domain/board-member";
 import type { BoardRepository } from "@/modules/board/domain/board-repository";
 
@@ -15,7 +15,7 @@ export type CheckBoardAccessInput = {
  * 存在しない掲示板の場合も同じく board_not_found になる。
  */
 export type CheckBoardAccessResult =
-  | { ok: true }
+  | { ok: true; member: BoardMember }
   | { ok: false; reason: "board_not_found" | "forbidden" };
 
 export function makeCheckBoardAccess({ boardRepository }: Deps) {
@@ -31,6 +31,6 @@ export function makeCheckBoardAccess({ boardRepository }: Deps) {
     if (!hasRole(member, roles)) {
       return { ok: false, reason: "forbidden" };
     }
-    return { ok: true };
+    return { ok: true, member };
   };
 }

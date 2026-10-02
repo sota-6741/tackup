@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Board } from "@/modules/board/domain/board";
 import type { BoardMember } from "@/modules/board/domain/board-member";
 import type {
@@ -7,6 +7,7 @@ import type {
   BoardRepository,
   CreateBoardData,
 } from "@/modules/board/domain/board-repository";
+import type { InviteToken } from "@/modules/board/domain/invite-token";
 import { withSafeDatabaseErrors } from "@/shared/infrastructure/database-error";
 import type { DbExecutor } from "@/shared/infrastructure/db";
 import { board, boardMember, inviteToken } from "./schema";
@@ -63,6 +64,30 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     return found ?? null;
   }
 
+  async function findActiveInviteToken(
+    boardId: string,
+  ): Promise<InviteToken | null> {
+    if (!isUuid(boardId)) return null;
+    const [found] = await db
+      .select()
+      .from(inviteToken)
+      .where(
+        and(eq(inviteToken.boardId, boardId), isNull(inviteToken.revokedAt)),
+      );
+    return found ?? null;
+  }
+
+  /** 失効の時刻は、created_at の既定値と同じく DB の時計で記録する。 */
+  async function revokeActiveInviteToken(boardId: string): Promise<void> {
+    if (!isUuid(boardId)) return;
+    await db
+      .update(inviteToken)
+      .set({ revokedAt: sql`now()` })
+      .where(
+        and(eq(inviteToken.boardId, boardId), isNull(inviteToken.revokedAt)),
+      );
+  }
+
   return withSafeDatabaseErrors({
     create,
     addMember,
@@ -70,5 +95,7 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     findById,
     findAllByUserId,
     findMember,
+    findActiveInviteToken,
+    revokeActiveInviteToken,
   });
 }

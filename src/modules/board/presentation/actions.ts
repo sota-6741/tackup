@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createBoard } from "@/di/board";
+import { createBoard, reissueInviteToken } from "@/di/board";
 import { getSession } from "@/modules/auth/presentation/session";
 import type { CreateBoardResult } from "@/modules/board/application/create-board";
+import type { ReissueInviteTokenResult } from "@/modules/board/application/reissue-invite-token";
 import { BOARD_NAME_MAX_LENGTH } from "@/modules/board/domain/board";
 
 export type CreateBoardState = {
@@ -46,4 +47,44 @@ export async function createBoardAction(
 
   revalidatePath("/boards", "layout");
   redirect(`/boards/${result.board.id}`);
+}
+
+export type ReissueInviteTokenActionResult =
+  | { ok: true; inviteUrl: string }
+  | { ok: false; error: string };
+
+const REISSUE_INVITE_TOKEN_ERROR_MESSAGES: Record<
+  Extract<ReissueInviteTokenResult, { ok: false }>["reason"],
+  string
+> = {
+  board_not_found: "再発行できませんでした。",
+  forbidden: "再発行できませんでした。",
+  board_not_public: "再発行できませんでした。",
+};
+
+export async function reissueInviteTokenAction(
+  boardId: unknown,
+): Promise<ReissueInviteTokenActionResult> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  if (typeof boardId !== "string") {
+    return {
+      ok: false,
+      error: REISSUE_INVITE_TOKEN_ERROR_MESSAGES.board_not_found,
+    };
+  }
+
+  const result = await reissueInviteToken({
+    boardId,
+    userId: session.user.id,
+  });
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: REISSUE_INVITE_TOKEN_ERROR_MESSAGES[result.reason],
+    };
+  }
+
+  revalidatePath(`/boards/${boardId}`);
+  return { ok: true, inviteUrl: result.inviteUrl };
 }

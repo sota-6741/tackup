@@ -13,12 +13,18 @@ export default async function BoardPage({
   const { boardId } = await params;
   const result = await getBoard({ boardId, userId: session.user.id });
   if (!result.ok) notFound();
-  const { board } = result;
+  const { board, role, inviteUrl } = result;
 
   return (
     <div className="flex flex-col gap-8 px-6 py-8">
       <RememberLastBoard boardId={board.id} />
-      <BoardHeader name={board.name} isPublic={board.isPublic} />
+      <BoardHeader
+        boardId={board.id}
+        name={board.name}
+        isPublic={board.isPublic}
+        memberRole={role}
+        inviteUrl={inviteUrl}
+      />
       <p className="py-16 text-center text-muted-foreground text-sm">
         まだ掲示物はありません
       </p>
