@@ -57,6 +57,22 @@ export function makeGcsFileStorage({
     return url;
   }
 
+  async function createSaveUrl({
+    key,
+    fileName,
+  }: {
+    key: string;
+    fileName: string;
+  }): Promise<string> {
+    const [url] = await storage.bucket(bucket).file(key).getSignedUrl({
+      version: "v4",
+      action: "read",
+      expires: expiresAt(),
+      promptSaveAs: fileName,
+    });
+    return url;
+  }
+
   /** メタデータを読んだあとに上書きされても中身が食い違わないよう、読んだ世代を指定して先頭のバイトを取る。 */
   async function readHead({
     key,
@@ -118,6 +134,7 @@ export function makeGcsFileStorage({
   return {
     createUploadUrl,
     createDownloadUrl,
+    createSaveUrl,
     readHead,
     move,
     delete: deleteFile,

@@ -233,3 +233,17 @@ test("掲示開始の新しい順、同じ日時なら ID の大きい順に返�
     oldest.id,
   ]);
 });
+
+test("公開の ID から掲示物を探せる。ない ID と、形の合わない ID は null を返す", async () => {
+  const board = await createBoard();
+  const created = await repository.create(
+    postData(board.id, { publicId: "public-abc_DEF-123" }),
+  );
+
+  expect(await repository.findByPublicId("public-abc_DEF-123")).toEqual(
+    created,
+  );
+  expect(await repository.findByPublicId("unknown")).toBeNull();
+  expect(await repository.findByPublicId("a\u0000b")).toBeNull();
+  expect(await repository.findByPublicId("")).toBeNull();
+});

@@ -27,10 +27,12 @@ test("掲示物のサムネイルとタイトルを表示し、縦横比が先�
   expect(screen.queryByText("まだ掲示物はありません")).not.toBeInTheDocument();
 });
 
-test("掲示物詳細への導線は、遷移先ができるまで出さない", () => {
+test("タイルは掲示物詳細へのリンクになる", () => {
   render(<PostBoard posts={[post]} nextHref={null} />);
 
-  expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("link", { name: "夏祭りのお知らせ" }),
+  ).toHaveAttribute("href", "/posts/public-1");
 });
 
 test("続きがあれば、続きのページへのリンクを表示する", () => {

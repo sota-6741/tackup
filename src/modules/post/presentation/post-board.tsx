@@ -26,19 +26,26 @@ export function PostBoard({ posts, nextHref }: PostBoardProps) {
       <ul className="columns-2 gap-4 md:columns-3 xl:columns-4">
         {posts.map((post) => (
           <li key={post.publicId} className="mb-4 break-inside-avoid">
-            <figure className="flex flex-col gap-2">
-              {/* biome-ignore lint/performance/noImgElement: 署名付きの URL は毎回変わるので、next/image で最適化しない */}
-              <img
-                src={post.thumbnailUrl}
-                alt=""
-                width={post.thumbnailWidth}
-                height={post.thumbnailHeight}
-                className="h-auto w-full rounded-md border bg-muted"
-              />
-              <figcaption className="break-words text-sm">
-                {post.title}
-              </figcaption>
-            </figure>
+            {/* 先読みはしない。先読みのたびに署名付きの URL を発行し、閲覧の記録も増えるため。 */}
+            <Link
+              href={`/posts/${post.publicId}`}
+              prefetch={false}
+              className="block rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <figure className="flex flex-col gap-2">
+                {/* biome-ignore lint/performance/noImgElement: 署名付きの URL は毎回変わるので、next/image で最適化しない */}
+                <img
+                  src={post.thumbnailUrl}
+                  alt=""
+                  width={post.thumbnailWidth}
+                  height={post.thumbnailHeight}
+                  className="h-auto w-full rounded-md border bg-muted"
+                />
+                <figcaption className="break-words text-sm">
+                  {post.title}
+                </figcaption>
+              </figure>
+            </Link>
           </li>
         ))}
       </ul>

@@ -5,8 +5,8 @@ import { SignInButton } from "./sign-in-button";
 
 vi.mock("./auth-client", () => ({ signIn: { social: vi.fn() } }));
 
-test("googleでサインインし、ボード画面にリダイレクトされる", () => {
-  render(<SignInButton />);
+test("Google でサインインし、ログイン後は渡された戻り先へ移動する", () => {
+  render(<SignInButton returnPath="/posts/abc" />);
 
   const button = screen.getByRole("button", { name: "Google でサインイン" });
   expect(button).toBeInTheDocument();
@@ -14,6 +14,6 @@ test("googleでサインインし、ボード画面にリダイレクトされ�
   fireEvent.click(button);
   expect(signIn.social).toHaveBeenCalledWith({
     provider: "google",
-    callbackURL: "/boards",
+    callbackURL: "/posts/abc",
   });
 });

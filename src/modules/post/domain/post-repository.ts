@@ -32,6 +32,8 @@ export interface PostRepository {
    * `after` を渡すと、その位置より後ろを返す。公開中の条件は domain の `isPublished` と同じ。
    */
   findPublished(input: FindPublishedInput): Promise<Post[]>;
+  /** 公開の URL に使う ID から探す。公開中かどうかは見ない。 */
+  findByPublicId(publicId: string): Promise<Post | null>;
 }
 
 export type FindPublishedInput = {

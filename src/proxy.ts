@@ -26,7 +26,8 @@ export async function proxy(request: NextRequest) {
 
 /** ログインなしで開ける経路。ページの中からは HTTP ステータスを 429 にできないので、回数の制限はここでかける。 */
 function isPublicView(request: NextRequest): boolean {
-  return request.nextUrl.pathname.startsWith("/b/");
+  const { pathname } = request.nextUrl;
+  return pathname.startsWith("/b/") || pathname.startsWith("/posts/");
 }
 
 function requiresSignIn(request: NextRequest): boolean {
@@ -77,5 +78,6 @@ export const config = {
     // 上の条件は、先読みのヘッダーが付いた要求を proxy に通さない。このヘッダーは誰でも付けられるので、
     // 回数の制限をかける経路は、ヘッダーに関係なく必ず通す。
     { source: "/b/:path*" },
+    { source: "/posts/:path*" },
   ],
 };

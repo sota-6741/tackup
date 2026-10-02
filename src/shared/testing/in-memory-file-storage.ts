@@ -34,6 +34,9 @@ export function makeInMemoryFileStorage() {
     async createDownloadUrl(key) {
       return `https://storage.example.com/${key}`;
     },
+    async createSaveUrl({ key, fileName }) {
+      return `https://storage.example.com/${key}?save=${encodeURIComponent(fileName)}`;
+    },
     async readHead({ key, length }) {
       const file = files.get(key);
       if (!file) return null;
