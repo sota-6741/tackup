@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -16,6 +17,7 @@ export default defineConfig({
             "src/**/*.db.test.ts",
             "src/**/*.storage.test.ts",
             "src/**/*.gcs.test.ts",
+            "src/**/*.browser.test.ts",
           ],
           setupFiles: ["./vitest.setup.ts"],
         },
@@ -47,6 +49,19 @@ export default defineConfig({
           name: "gcs",
           environment: "node",
           include: ["src/**/*.gcs.test.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "browser",
+          include: ["src/**/*.browser.test.ts"],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: "chromium" }],
+          },
         },
       },
     ],

@@ -1,3 +1,4 @@
+import "server-only";
 import { makeCheckBoardAccess } from "@/modules/board/application/check-board-access";
 import { makeCreateBoard } from "@/modules/board/application/create-board";
 import { makeFindLandingBoard } from "@/modules/board/application/find-landing-board";

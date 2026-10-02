@@ -32,7 +32,10 @@ test("CSP で、nonce の付いたスクリプトだけを動かし、違反な�
   await page.waitForLoadState("networkidle");
 
   const policy = response?.headers()["content-security-policy"] ?? "";
-  expect(policy).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
+  expect(policy).toMatch(
+    /script-src 'self' 'nonce-[^']+' 'strict-dynamic' 'wasm-unsafe-eval'/,
+  );
+  expect(policy).toContain("worker-src 'self'");
   expect(policy).toContain("frame-ancestors 'none'");
   await expect(
     page.getByRole("button", { name: "Google でサインイン" }),
