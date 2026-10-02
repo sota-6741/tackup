@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { expect, test } from "vitest";
+import { user } from "@/modules/auth/infrastructure/schema";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
 import { isExpired, isPublished } from "@/modules/post/domain/post";
 import type { CreatePostData } from "@/modules/post/domain/post-repository";
@@ -10,6 +12,7 @@ import {
 import { DatabaseError } from "@/shared/infrastructure/database-error";
 import { testDb } from "@/shared/testing/test-db";
 import { makeDrizzlePostRepository } from "./drizzle-post-repository";
+import { post } from "./schema";
 
 const repository = makeDrizzlePostRepository(testDb);
 const boardRepository = makeDrizzleBoardRepository(testDb);
@@ -337,4 +340,96 @@ test("期限切れの掲示物を、掲示終了の古い順、同じ日時な�
     ids[2],
     newest.id,
   ]);
+});
+
+async function createUser(id: string) {
+  await testDb.insert(user).values({
+    id,
+    name: "テストユーザー",
+    email: `${id}@example.com`,
+    emailVerified: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  return id;
+}
+
+test("撤去済みにすると、状態・日時・撤去した人が記録され、期限切れの一覧から消える", async () => {
+  const board = await createBoard();
+  const userId = await createUser("user-1");
+  const created = await repository.create(postData(board.id));
+  const removedAt = new Date("2026-12-01T00:00:00Z");
+
+  const removed = await repository.markRemoved({
+    id: created.id,
+    removedAt,
+    removedBy: userId,
+  });
+
+  expect(removed).toBe(true);
+  expect(await repository.findByPublicId(created.publicId)).toMatchObject({
+    status: "removed",
+    removedAt,
+    removedBy: userId,
+  });
+  expect(
+    await repository.findExpired({
+      boardId: board.id,
+      now: removedAt,
+      limit: 10,
+    }),
+  ).toEqual([]);
+});
+
+test("すでに撤去済みの掲示物と下書きは書き換えず、false を返す", async () => {
+  const board = await createBoard();
+  const first = await createUser("user-1");
+  const second = await createUser("user-2");
+  const created = await repository.create(postData(board.id));
+  const draft = await repository.create(
+    postData(board.id, { status: "draft" }),
+  );
+  const removedAt = new Date("2026-12-01T00:00:00Z");
+  await repository.markRemoved({ id: created.id, removedAt, removedBy: first });
+
+  const again = await repository.markRemoved({
+    id: created.id,
+    removedAt: new Date("2026-12-02T00:00:00Z"),
+    removedBy: second,
+  });
+  const draftRemoved = await repository.markRemoved({
+    id: draft.id,
+    removedAt,
+    removedBy: first,
+  });
+
+  expect(again).toBe(false);
+  expect(draftRemoved).toBe(false);
+  expect(await repository.findByPublicId(created.publicId)).toMatchObject({
+    removedAt,
+    removedBy: first,
+  });
+  const [stillDraft] = await testDb
+    .select()
+    .from(post)
+    .where(eq(post.id, draft.id));
+  expect(stillDraft.status).toBe("draft");
+});
+
+test("同時に撤去済みにしても、書き換えるのは 1 回だけ", async () => {
+  const board = await createBoard();
+  const userId = await createUser("user-1");
+  const created = await repository.create(postData(board.id));
+
+  const results = await Promise.all(
+    [1, 2, 3].map((day) =>
+      repository.markRemoved({
+        id: created.id,
+        removedAt: new Date(`2026-12-0${day}T00:00:00Z`),
+        removedBy: userId,
+      }),
+    ),
+  );
+
+  expect(results.filter(Boolean)).toHaveLength(1);
 });

@@ -37,6 +37,11 @@ export interface PostRepository {
    * 掲示終了の古い順（同じなら ID の小さい順）に、最大 `limit` 件返す。期限切れの条件は domain の `isExpired` と同じ。
    */
   findExpired(input: FindExpiredInput): Promise<ExpiredPost[]>;
+  /**
+   * 状態が `published` の掲示物を撤去済みにし、撤去した日時と人を記録する。
+   * 書き換えたら `true`。ほかの人が先に撤去済みにしたなど、状態が `published` でなければ何もせずに `false`。
+   */
+  markRemoved(input: MarkRemovedInput): Promise<boolean>;
   /** 公開の URL に使う ID から探す。公開中かどうかは見ない。 */
   findByPublicId(publicId: string): Promise<Post | null>;
 }
@@ -57,3 +62,9 @@ export type FindExpiredInput = {
 
 /** 期限切れの掲示物には、必ず掲示終了がある。 */
 export type ExpiredPost = Post & { expiresAt: Date };
+
+export type MarkRemovedInput = {
+  id: string;
+  removedAt: Date;
+  removedBy: string;
+};
