@@ -1,18 +1,30 @@
 import { notFound, redirect } from "next/navigation";
 import { getBoard } from "@/di/board";
+import { listBoardPosts } from "@/di/post";
 import { getSession } from "@/modules/auth/presentation/session";
 import { BoardHeader } from "@/modules/board/presentation/board-header";
 import { RememberLastBoard } from "@/modules/board/presentation/remember-last-board";
+import { PostBoard } from "@/modules/post/presentation/post-board";
 
 export default async function BoardPage({
   params,
+  searchParams,
 }: PageProps<"/boards/[boardId]">) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
   const { boardId } = await params;
-  const result = await getBoard({ boardId, userId: session.user.id });
-  if (!result.ok) notFound();
+  const { after } = await searchParams;
+  const userId = session.user.id;
+  const [result, posts] = await Promise.all([
+    getBoard({ boardId, userId }),
+    listBoardPosts({
+      boardId,
+      userId,
+      cursor: typeof after === "string" ? after : undefined,
+    }),
+  ]);
+  if (!result.ok || !posts.ok) notFound();
   const { board, role, inviteUrl } = result;
 
   return (
@@ -25,9 +37,13 @@ export default async function BoardPage({
         memberRole={role}
         inviteUrl={inviteUrl}
       />
-      <p className="py-16 text-center text-muted-foreground text-sm">
-        まだ掲示物はありません
-      </p>
+      <PostBoard
+        posts={posts.posts}
+        nextHref={
+          posts.nextCursor &&
+          `/boards/${board.id}?after=${encodeURIComponent(posts.nextCursor)}`
+        }
+      />
     </div>
   );
 }
