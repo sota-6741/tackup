@@ -64,6 +64,8 @@ async function setup() {
       publicId: `public-${posts}`,
       boardId: board.id,
       title: "既存の掲示物",
+      description: null,
+      externalUrl: null,
       originalKey: `boards/${board.id}/posts/post-1/original`,
       originalContentType: "application/pdf",
       originalSize,

@@ -9,7 +9,11 @@ import {
   parseOriginalFile,
 } from "@/modules/post/domain/original-file";
 import {
+  POST_DESCRIPTION_MAX_LENGTH,
+  POST_EXTERNAL_URL_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
+  parsePostDescription,
+  parsePostExternalUrl,
   parsePostTitle,
   parsePublishPeriod,
 } from "@/modules/post/domain/post";
@@ -21,6 +25,7 @@ import { Button } from "@/shared/presentation/components/ui/button";
 import { Checkbox } from "@/shared/presentation/components/ui/checkbox";
 import { Input } from "@/shared/presentation/components/ui/input";
 import { Label } from "@/shared/presentation/components/ui/label";
+import { Textarea } from "@/shared/presentation/components/ui/textarea";
 import { createUploadUrlsAction, registerPostAction } from "./actions";
 import { createThumbnail } from "./create-thumbnail";
 import { datetimeLocalToIso, toDatetimeLocalValue } from "./datetime-local";
@@ -57,10 +62,14 @@ function titleFromFileName(name: string): string {
 /** サーバーでも同じ決まりを確かめる。ここで先に確かめるのは、登録できない入力のためにアップロードしないため。 */
 function parsePostInput({
   title,
+  description,
+  externalUrl,
   publishFrom,
   expiresAt,
 }: {
   title: string;
+  description: string;
+  externalUrl: string;
   publishFrom: string;
   /** 無期限なら `null`。 */
   expiresAt: string | null;
@@ -70,6 +79,13 @@ function parsePostInput({
   const postTitle = parsePostTitle(title);
   if (!postTitle.ok) {
     return { ok: false, message: POST_INPUT_ERROR_MESSAGES[postTitle.reason] };
+  }
+  const optional = [
+    parsePostDescription(description),
+    parsePostExternalUrl(externalUrl),
+  ].find((result) => !result.ok);
+  if (optional && !optional.ok) {
+    return { ok: false, message: POST_INPUT_ERROR_MESSAGES[optional.reason] };
   }
   const publishFromIso = datetimeLocalToIso(publishFrom);
   const expiresAtIso =
@@ -90,6 +106,8 @@ function parsePostInput({
 export function PostForm({ boardId }: { boardId: string }) {
   const [original, setOriginal] = useState<Original>({ status: "idle" });
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [externalUrl, setExternalUrl] = useState("");
   const [publishFrom, setPublishFrom] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [unlimited, setUnlimited] = useState(false);
@@ -188,6 +206,8 @@ export function PostForm({ boardId }: { boardId: string }) {
     const result = await registerPostAction({
       boardId,
       title,
+      description,
+      externalUrl,
       publishFrom: publishFromIso,
       expiresAt: expiresAtIso,
       originalKey: urls.original.key,
@@ -210,6 +230,8 @@ export function PostForm({ boardId }: { boardId: string }) {
     }
     const period = parsePostInput({
       title,
+      description,
+      externalUrl,
       publishFrom,
       expiresAt: unlimited ? null : expiresAt,
     });
@@ -321,6 +343,44 @@ export function PostForm({ boardId }: { boardId: string }) {
             無期限にする
           </Label>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="post-description">説明文</Label>
+        <Textarea
+          id="post-description"
+          rows={4}
+          maxLength={POST_DESCRIPTION_MAX_LENGTH}
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          aria-describedby="post-description-message"
+        />
+        <p
+          id="post-description-message"
+          className="text-muted-foreground text-sm"
+        >
+          {POST_DESCRIPTION_MAX_LENGTH}文字以内（省略できます）
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="post-external-url">外部リンク</Label>
+        <Input
+          id="post-external-url"
+          type="url"
+          inputMode="url"
+          placeholder="https://"
+          maxLength={POST_EXTERNAL_URL_MAX_LENGTH}
+          value={externalUrl}
+          onChange={(event) => setExternalUrl(event.target.value)}
+          aria-describedby="post-external-url-message"
+        />
+        <p
+          id="post-external-url-message"
+          className="text-muted-foreground text-sm"
+        >
+          申し込みフォームや詳しい案内のページなど（省略できます）
+        </p>
       </div>
 
       <div className="flex flex-col items-end gap-3">

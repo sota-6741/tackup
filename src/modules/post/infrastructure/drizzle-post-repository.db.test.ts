@@ -28,6 +28,8 @@ function postData(
     publicId: `public-${id}`,
     boardId,
     title: "夏祭りのお知らせ",
+    description: null,
+    externalUrl: null,
     originalKey: `boards/${boardId}/posts/${id}/original`,
     originalContentType: "application/pdf",
     originalSize: 1000,

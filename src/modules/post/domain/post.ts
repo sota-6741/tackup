@@ -47,6 +47,61 @@ export function parsePostTitle(value: string): ParsePostTitleResult {
   return { ok: true, title };
 }
 
+export const POST_DESCRIPTION_MAX_LENGTH = 1000;
+
+export type ParsePostDescriptionResult =
+  | { ok: true; description: string | null }
+  | { ok: false; reason: "description_too_long" };
+
+/** 空（空白だけを含む）なら、説明文なしとして `null` にする。 */
+export function parsePostDescription(
+  value: string,
+): ParsePostDescriptionResult {
+  const description = value.trim();
+  if (description.length === 0) return { ok: true, description: null };
+  if (description.length > POST_DESCRIPTION_MAX_LENGTH) {
+    return { ok: false, reason: "description_too_long" };
+  }
+  return { ok: true, description };
+}
+
+export const POST_EXTERNAL_URL_MAX_LENGTH = 2000;
+
+export type ParsePostExternalUrlResult =
+  | { ok: true; externalUrl: string | null }
+  | { ok: false; reason: "external_url_invalid" };
+
+/**
+ * 空なら、外部リンクなしとして `null` にする。
+ * `http`・`https` の URL だけを受け付ける。`javascript:` などを通すと、リンクを押した人のブラウザでスクリプトが動く。
+ */
+export function parsePostExternalUrl(
+  value: string,
+): ParsePostExternalUrlResult {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return { ok: true, externalUrl: null };
+
+  const url = toUrl(trimmed);
+  // 保存するのは読み直した URL（日本語のパスなどは % の形に変わって長くなる）なので、長さはそちらで確かめる。
+  if (
+    !url ||
+    url.href.length > POST_EXTERNAL_URL_MAX_LENGTH ||
+    (url.protocol !== "http:" && url.protocol !== "https:")
+  ) {
+    return { ok: false, reason: "external_url_invalid" };
+  }
+  return { ok: true, externalUrl: url.href };
+}
+
+/** `URL.canParse` は古いブラウザにないので、例外で確かめる。フォームの確認でブラウザでも動く。 */
+function toUrl(value: string): URL | null {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+}
+
 export type PublishPeriodError = "period_invalid" | "expires_before_publish";
 
 export type ParsePublishPeriodResult =

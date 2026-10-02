@@ -78,6 +78,8 @@ export async function createUploadUrlsAction(
 const registerPostInput = z.object({
   boardId: z.string(),
   title: z.string(),
+  description: z.string(),
+  externalUrl: z.string(),
   publishFrom: z.iso.datetime(),
   expiresAt: z.iso.datetime().nullable(),
   originalKey: z.string(),
@@ -118,6 +120,8 @@ export async function registerPostAction(
     boardId,
     userId: session.user.id,
     title: parsed.data.title,
+    description: parsed.data.description,
+    externalUrl: parsed.data.externalUrl,
     publishFrom: new Date(parsed.data.publishFrom),
     expiresAt: expiresAt === null ? null : new Date(expiresAt),
     originalKey: parsed.data.originalKey,

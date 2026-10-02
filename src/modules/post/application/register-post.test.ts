@@ -69,6 +69,8 @@ async function setup({ role = "poster" }: { role?: Role } = {}) {
     boardId: board.id,
     userId: "user-1",
     title: " 夏祭りのお知らせ ",
+    description: "",
+    externalUrl: "",
     publishFrom: new Date("2026-10-01T00:00:00Z"),
     expiresAt: new Date("2026-11-01T00:00:00Z"),
     originalKey,
@@ -84,6 +86,8 @@ async function setup({ role = "poster" }: { role?: Role } = {}) {
       publicId: id,
       boardId: board.id,
       title: "既存の掲示物",
+      description: null,
+      externalUrl: null,
       originalKey: `boards/${board.id}/posts/${id}/original`,
       originalContentType: "application/pdf",
       originalSize: 1,
@@ -152,6 +156,29 @@ test.each<Role>(["admin", "poster"])(
   },
 );
 
+test("説明文と外部リンクを付けて登録できる。空なら null で登録する", async () => {
+  const { registerPost, input, posts } = await setup();
+
+  await registerPost({
+    ...input,
+    description: " 雨天中止です ",
+    externalUrl: "https://example.com/form",
+  });
+
+  expect(posts[0]).toMatchObject({
+    description: "雨天中止です",
+    externalUrl: "https://example.com/form",
+  });
+});
+
+test("説明文と外部リンクが空なら、どちらも null で登録する", async () => {
+  const { registerPost, input, posts } = await setup();
+
+  await registerPost(input);
+
+  expect(posts[0]).toMatchObject({ description: null, externalUrl: null });
+});
+
 test("掲示終了を null にすると、無期限の掲示物として登録する", async () => {
   const { registerPost, input, posts } = await setup();
 
@@ -183,6 +210,16 @@ test.each([
     "expires_before_publish",
   ],
   ["読めない日時", { publishFrom: new Date("invalid") }, "period_invalid"],
+  [
+    "長すぎる説明文",
+    { description: "あ".repeat(1001) },
+    "description_too_long",
+  ],
+  [
+    "javascript: の外部リンク",
+    { externalUrl: "javascript:alert(1)" },
+    "external_url_invalid",
+  ],
 ])("%s はその理由を返し、登録しない", async (_, overrides, reason) => {
   const { registerPost, input, posts } = await setup();
 

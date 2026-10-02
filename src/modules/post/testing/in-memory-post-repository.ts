@@ -16,8 +16,6 @@ export function makeInMemoryPostRepository() {
     const now = new Date();
     const post: Post = {
       ...data,
-      description: null,
-      externalUrl: null,
       removedAt: null,
       removedBy: null,
       createdAt: now,

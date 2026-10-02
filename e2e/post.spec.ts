@@ -35,6 +35,8 @@ test("ファイルを選んで掲示物を登録すると、掲示板ボード�
   await expect(page.getByLabel(/タイトル/)).toHaveValue("夏祭りのお知らせ");
 
   await page.getByLabel(/掲示終了/).fill("2099-12-31T23:59");
+  await page.getByLabel("説明文").fill("雨天中止です。\n詳しくはリンク先へ。");
+  await page.getByLabel("外部リンク").fill("https://example.com/festival");
   await page.getByRole("button", { name: "登録する" }).click();
 
   await expect(page).toHaveURL(boardUrl);
@@ -61,6 +63,8 @@ test("ファイルを選んで掲示物を登録すると、掲示板ボード�
   expect(posts).toEqual([
     expect.objectContaining({
       title: "夏祭りのお知らせ",
+      description: "雨天中止です。\n詳しくはリンク先へ。",
+      externalUrl: "https://example.com/festival",
       status: "published",
       originalContentType: "application/pdf",
       originalKey: `boards/${boardId}/posts/${posts[0]?.id}/original`,
