@@ -238,3 +238,29 @@ test("掲示板の行をロックして返す。ない掲示板と UUID 形式�
   ).toBeNull();
   expect(await repository.lockById("missing-board")).toBeNull();
 });
+
+test("有効な招待リンクのトークンから掲示板を探せる。失効したトークンと、存在しないトークンは null を返す", async () => {
+  const created = await repository.create({ name: "A", isPublic: true });
+  const other = await repository.create({ name: "B", isPublic: true });
+  await repository.addInviteToken({ boardId: created.id, token: "token-old" });
+  await repository.addInviteToken({ boardId: other.id, token: "token-other" });
+  await repository.revokeActiveInviteToken(created.id);
+  await repository.addInviteToken({ boardId: created.id, token: "token-new" });
+
+  expect(await repository.findByActiveInviteToken("token-new")).toEqual(
+    created,
+  );
+  expect(await repository.findByActiveInviteToken("token-other")).toEqual(
+    other,
+  );
+  expect(await repository.findByActiveInviteToken("token-old")).toBeNull();
+  expect(await repository.findByActiveInviteToken("token-unknown")).toBeNull();
+});
+
+test.each([
+  ["NUL 文字を含むトークン", "token\u0000"],
+  ["空のトークン", ""],
+  ["長すぎるトークン", "a".repeat(101)],
+])("%s で探しても、エラーにならず null を返す", async (_, token) => {
+  expect(await repository.findByActiveInviteToken(token)).toBeNull();
+});

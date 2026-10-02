@@ -5,6 +5,7 @@ import { rateLimiter } from "@/di/rate-limiter";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
 import { makeCreateUploadUrls } from "@/modules/post/application/create-upload-urls";
 import { makeListBoardPosts } from "@/modules/post/application/list-board-posts";
+import { makeListPublicBoardPosts } from "@/modules/post/application/list-public-board-posts";
 import { makeListPublishedPosts } from "@/modules/post/application/list-published-posts";
 import { makeRegisterPost } from "@/modules/post/application/register-post";
 import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
@@ -56,5 +57,10 @@ const listPublishedPosts = makeListPublishedPosts({
 
 export const listBoardPosts = makeListBoardPosts({
   checkBoardAccess,
+  listPublishedPosts,
+});
+
+export const listPublicBoardPosts = makeListPublicBoardPosts({
+  boardRepository: makeDrizzleBoardRepository(db),
   listPublishedPosts,
 });

@@ -6,6 +6,11 @@ export type Board = {
   updatedAt: Date;
 };
 
+/** 招待リンクと QR コードから、ログインなしで見てよい掲示板か。閲覧可否の判定は、画面ごとに書かずにここを使う。 */
+export function isOpenToPublic(board: Pick<Board, "isPublic">): boolean {
+  return board.isPublic;
+}
+
 export const BOARD_NAME_MAX_LENGTH = 50;
 
 export type BoardNameError = "name_empty" | "name_too_long";

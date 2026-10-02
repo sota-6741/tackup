@@ -15,6 +15,9 @@ import { board, boardMember, inviteToken } from "./schema";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** URL から来る招待リンクのトークン。NUL 文字などを含む値で検索すると Postgres がエラーを投げるので、発行するトークンに使う文字だけを通す。 */
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{1,100}$/;
+
 /** board.id は uuid 型の列なので、UUID 形式でない値で検索すると Postgres がエラーを投げる。検索前にこれで弾き、見つからない扱いにする。 */
 function isUuid(value: string): boolean {
   return UUID_PATTERN.test(value);
@@ -88,6 +91,16 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     return found ?? null;
   }
 
+  async function findByActiveInviteToken(token: string): Promise<Board | null> {
+    if (!TOKEN_PATTERN.test(token)) return null;
+    const [found] = await db
+      .select({ board })
+      .from(inviteToken)
+      .innerJoin(board, eq(board.id, inviteToken.boardId))
+      .where(and(eq(inviteToken.token, token), isNull(inviteToken.revokedAt)));
+    return found?.board ?? null;
+  }
+
   /** 失効の時刻は、created_at の既定値と同じく DB の時計で記録する。 */
   async function revokeActiveInviteToken(boardId: string): Promise<void> {
     if (!isUuid(boardId)) return;
@@ -108,6 +121,7 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     findAllByUserId,
     findMember,
     findActiveInviteToken,
+    findByActiveInviteToken,
     revokeActiveInviteToken,
   });
 }
