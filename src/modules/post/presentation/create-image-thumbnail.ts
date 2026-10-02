@@ -8,20 +8,23 @@ import {
 
 async function drawScaled(file: File): Promise<HTMLCanvasElement> {
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(
-    1,
-    THUMBNAIL_LONG_SIDE / Math.max(bitmap.width, bitmap.height),
-  );
-  const canvas = createCanvas({
-    width: bitmap.width * scale,
-    height: bitmap.height * scale,
-  });
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("canvas を使えません");
-  context.imageSmoothingQuality = "high";
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  return canvas;
+  try {
+    const scale = Math.min(
+      1,
+      THUMBNAIL_LONG_SIDE / Math.max(bitmap.width, bitmap.height),
+    );
+    const canvas = createCanvas({
+      width: bitmap.width * scale,
+      height: bitmap.height * scale,
+    });
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("canvas を使えません");
+    context.imageSmoothingQuality = "high";
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  } finally {
+    bitmap.close();
+  }
 }
 
 export async function createImageThumbnail(

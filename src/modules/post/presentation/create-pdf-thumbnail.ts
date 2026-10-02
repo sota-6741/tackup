@@ -25,6 +25,7 @@ async function renderFirstPage(
   return canvas;
 }
 
+/** PDF として開けても 1 ページ目が壊れていると、pdf.js は UnknownErrorException を投げる。このクラスは公開されていないので、名前で見分ける。 */
 export async function createPdfThumbnail(
   file: File,
 ): Promise<CreateThumbnailResult> {
@@ -41,7 +42,8 @@ export async function createPdfThumbnail(
   } catch (error) {
     if (
       error instanceof pdfjs.InvalidPDFException ||
-      error instanceof pdfjs.PasswordException
+      error instanceof pdfjs.PasswordException ||
+      (error instanceof Error && error.name === "UnknownErrorException")
     ) {
       return { ok: false, reason: "pdf_unreadable" };
     }

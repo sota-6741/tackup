@@ -283,7 +283,7 @@ src/app/boards/[boardId]/page.tsx            [Server] getBoard。失敗なら 40
 ### サムネイル
 
 - PDF は pdf.js で 1 ページ目を描画する。画像は原本を縮小する。
-- 長辺を 800px にし、WebP（品質 0.8）で作る。
+- 長辺を 800px にし、WebP（品質 0.8）で作る。WebP に書き出せないブラウザでは `canvas.toBlob` が PNG を返すので、サムネイルの種類は `blob.type` で確かめる。このときの扱い（別の形式で作り直すか、PNG のまま保存するか）は、アップロードを作るステップ4で決める。
 - 作ったサムネイルの幅と高さも返す（ステップ5の masonry で縦横比に使う）。
 
 ### 状態
@@ -293,6 +293,7 @@ src/app/boards/[boardId]/page.tsx            [Server] getBoard。失敗なら 40
 | 形式・サイズが許可されていない（`parseOriginalFile` の `reason`） | 入力欄の下に理由に応じた文言を出す |
 | 作成中 | 入力欄を無効にし、「サムネイルを作成中…」を出す |
 | PDF・画像として読めない（`pdf_unreadable`・`image_unreadable`） | 入力欄の下に文言を出す |
+| 想定外の失敗（worker を読み込めないなど） | `error.tsx` の汎用のエラー画面を出す |
 | 作成できた | サムネイルと、幅×高さ・大きさ・かかった時間を出す（動作確認用。ステップ4で見直す） |
 
 ### 部品構成

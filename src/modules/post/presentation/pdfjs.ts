@@ -3,9 +3,12 @@ import type { DocumentInitParameters } from "pdfjs-dist/types/src/display/api";
 
 const PDFJS_BASE_URL = "/pdfjs/";
 
-/** pdf.js はブラウザでしか動かないので、使うときに読み込む。ファイルは postinstall が public/pdfjs/ に置く。 */
+/**
+ * pdf.js はブラウザでしか動かないので、使うときに読み込む。ファイルは postinstall が public/pdfjs/ に置く。
+ * 通常のビルドは最新のブラウザにしかない機能を使うので、polyfill 入りの legacy ビルドを使う。worker も同じビルドのものを置く。
+ */
 export async function loadPdfjs() {
-  const pdfjs = await import("pdfjs-dist");
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS_BASE_URL}pdf.worker.min.mjs`;
   return pdfjs;
 }

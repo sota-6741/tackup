@@ -7,7 +7,7 @@ const target = join(process.cwd(), "public", "pdfjs");
 
 rmSync(target, { recursive: true, force: true });
 cpSync(
-  join(source, "build", "pdf.worker.min.mjs"),
+  join(source, "legacy", "build", "pdf.worker.min.mjs"),
   join(target, "pdf.worker.min.mjs"),
 );
 for (const directory of ["cmaps", "standard_fonts", "wasm", "iccs"]) {

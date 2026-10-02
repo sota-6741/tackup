@@ -47,6 +47,24 @@ describe("PDF", () => {
     expect(result).toEqual({ ok: false, reason: "pdf_unreadable" });
   });
 
+  test("1 ページ目が壊れている PDF は pdf_unreadable を返す", async () => {
+    const pdf = await makePdfFile({ width: 595, height: 842 });
+    const withoutPage = (await pdf.text()).replace(
+      "/Kids [3 0 R]",
+      "/Kids [9 0 R]",
+    );
+    const file = new File([withoutPage], "broken-page.pdf", {
+      type: "application/pdf",
+    });
+
+    const result = await createThumbnail({
+      file,
+      contentType: "application/pdf",
+    });
+
+    expect(result).toEqual({ ok: false, reason: "pdf_unreadable" });
+  });
+
   test(
     "10MB 程度の PDF から 3 秒以内にサムネイルを作る",
     async () => {

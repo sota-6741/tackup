@@ -44,6 +44,14 @@ export function ThumbnailPreview() {
     return () => URL.revokeObjectURL(state.url);
   }, [state]);
 
+  /** イベントハンドラーの中の例外は error.tsx に届かないので、描画の中で投げ直す。 */
+  function throwInRender(error: unknown): never {
+    setState(() => {
+      throw error;
+    });
+    throw error;
+  }
+
   async function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -62,7 +70,7 @@ export function ThumbnailPreview() {
     const result = await createThumbnail({
       file,
       contentType: original.contentType,
-    });
+    }).catch(throwInRender);
     if (!result.ok) {
       setState({ status: "error", message: ERROR_MESSAGES[result.reason] });
       return;
