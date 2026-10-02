@@ -79,3 +79,20 @@ test("admin にだけ再発行のボタンを表示する", () => {
     screen.queryByRole("button", { name: "再発行" }),
   ).not.toBeInTheDocument();
 });
+
+test("掲示物登録の画面へのリンクを表示する", () => {
+  render(
+    <BoardHeader
+      boardId="board-1"
+      name="中野のボード"
+      isPublic={false}
+      memberRole="poster"
+      inviteUrl={null}
+    />,
+  );
+
+  expect(screen.getByRole("link", { name: "掲示物を登録" })).toHaveAttribute(
+    "href",
+    "/boards/board-1/posts/new",
+  );
+});

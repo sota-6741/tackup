@@ -23,6 +23,8 @@ export interface BoardRepository {
   addMember(data: AddMemberData): Promise<void>;
   addInviteToken(data: AddInviteTokenData): Promise<void>;
   findById(boardId: string): Promise<Board | null>;
+  /** 掲示板の行をロックして返す。トランザクションが終わるまで、同じ掲示板をロックするほかの処理を待たせる。数の上限など、DB の制約で表せない決まりを確かめる前に呼ぶ。 */
+  lockById(boardId: string): Promise<Board | null>;
   /** 掲示板を作った順ではなく、所属した日時（BoardMember.createdAt）の新しい順に返す。 */
   findAllByUserId(userId: string): Promise<Board[]>;
   findMember(boardId: string, userId: string): Promise<BoardMember | null>;

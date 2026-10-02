@@ -7,6 +7,8 @@ import {
   type OriginalFileError,
   parseOriginalFile,
 } from "@/modules/post/domain/original-file";
+import { BOARD_FILE_MAX_TOTAL_SIZE } from "@/modules/post/domain/post";
+import type { PostRepository } from "@/modules/post/domain/post-repository";
 import { parseThumbnailFile } from "@/modules/post/domain/thumbnail";
 import type { FileStorage } from "@/shared/domain/file-storage";
 
@@ -15,6 +17,7 @@ type Deps = {
     input: CheckBoardAccessInput,
   ) => Promise<CheckBoardAccessResult>;
   fileStorage: FileStorage;
+  postRepository: PostRepository;
   generateUploadKey: (owner: { boardId: string; userId: string }) => string;
 };
 
@@ -41,12 +44,15 @@ export type CreateUploadUrlsResult =
         | "board_not_found"
         | "forbidden"
         | OriginalFileError
-        | "thumbnail_invalid";
+        | "thumbnail_invalid"
+        | "storage_limit_exceeded";
     };
 
+/** 容量はここではロックせずに確かめる。無駄なアップロードを早く止めるためで、上限を守るのは掲示物の登録（`registerPost`）。 */
 export function makeCreateUploadUrls({
   checkBoardAccess,
   fileStorage,
+  postRepository,
   generateUploadKey,
 }: Deps) {
   async function createTarget({
@@ -80,6 +86,14 @@ export function makeCreateUploadUrls({
     if (!originalFile.ok) return originalFile;
     const thumbnailFile = parseThumbnailFile(thumbnail);
     if (!thumbnailFile.ok) return thumbnailFile;
+
+    const used = await postRepository.sumFileSizeByBoardId(boardId);
+    if (
+      used + originalFile.size + thumbnailFile.size >
+      BOARD_FILE_MAX_TOTAL_SIZE
+    ) {
+      return { ok: false, reason: "storage_limit_exceeded" };
+    }
 
     const [originalTarget, thumbnailTarget] = await Promise.all([
       createTarget({ boardId, userId, file: originalFile }),

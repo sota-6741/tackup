@@ -279,24 +279,42 @@ src/app/boards/[boardId]/page.tsx            [Server] getBoard。失敗なら 40
 
 ---
 
-## S4 掲示物登録（ステップ3は仮の画面）`/boards/{boardId}/posts/new`
+## S4 掲示物登録 `/boards/{boardId}/posts/new`
 
-要件 9。ステップ3では、サムネイルの生成を実際のブラウザで確かめるための仮の画面にする。アップロード・掲示期間・登録はステップ4で足し、この画面を掲示物登録のフォームに育てる。掲示板ボードのヘッダーからの導線もステップ4で足すので、それまでは URL を直接開く。
+要件 7・8・9・10、38.1。設計は `docs/design/post-registration.md`。掲示板ボードのヘッダーの「掲示物を登録」から開く（admin・poster とも）。
 
 ```
-┌─────────────────────────────┐
-│ 掲示物を登録                  │
-│                              │
-│ 原本                          │
-│ [ファイルを選択]               │
-│ PDF・JPEG・PNG・WebP（20MB まで）│
-│                              │
-│ ┌──────────┐                 │
-│ │ サムネイル │                 │
-│ └──────────┘                 │
-│ 565×800・176KB・230ms         │
-└─────────────────────────────┘
+┌─────────────────────────────────┐
+│ 掲示物を登録                      │
+│                                  │
+│ 原本 *                            │
+│ [ファイルを選択]                   │
+│ PDF・JPEG・PNG・WebP（20MB まで）  │
+│ ┌──────────┐                     │
+│ │ サムネイル │                     │
+│ └──────────┘                     │
+│                                  │
+│ タイトル *                        │
+│ [夏祭りのお知らせ             ]    │
+│ 100文字以内                       │
+│                                  │
+│ 掲示開始 *        掲示終了 *       │
+│ [2026/10/01 09:00] [          ]   │
+│                                  │
+│                      [登録する]   │
+└─────────────────────────────────┘
 ```
+
+### 入力項目
+
+| 項目 | 部品 | 内容 | 初期値 |
+| -- | -- | -- | -- |
+| 原本 | `ui/input`（`type="file"`） | PDF・JPEG・PNG・WebP、20MB まで。選ぶとすぐにサムネイルを作って表示する | なし |
+| タイトル | `ui/input` | 必須、100文字以内。前後の空白は取り除く | 原本を選んだとき、空ならファイル名（拡張子を除く） |
+| 掲示開始 | `ui/input`（`type="datetime-local"`） | 必須 | 画面を開いた日時 |
+| 掲示終了 | `ui/input`（`type="datetime-local"`） | 必須。掲示開始より後 | なし |
+
+日時は端末のタイムゾーンで入力し、ブラウザが ISO 8601（UTC）に変えて送る。過去の日時も登録できる（すでに貼り出した掲示物を、あとから記録できるようにするため）。
 
 ### サムネイル
 
@@ -304,22 +322,40 @@ src/app/boards/[boardId]/page.tsx            [Server] getBoard。失敗なら 40
 - 長辺を 800px にし、WebP（品質 0.8）で作る。WebP に書き出せないブラウザでは `canvas.toBlob` が PNG を返すので、返ってきた種類を確かめ、WebP でなければ白い背景に重ねて JPEG（品質 0.8）で作り直す。作った種類は結果の `contentType` で返す。
 - 作ったサムネイルの幅と高さも返す（ステップ5の masonry で縦横比に使う）。
 
+### 登録の流れ
+
+「登録する」を押すと、次の順に進める。途中で失敗したら、そこで止めてボタンの上に文言を出す。
+
+1. `createUploadUrlsAction` で、原本とサムネイルのアップロード URL を発行する
+2. ブラウザから、原本とサムネイルを署名付きの URL へ直接 PUT する
+3. `registerPostAction` で掲示物を登録する（`published` で登録する）
+4. 掲示板ボード（`/boards/{boardId}`）へ移動する
+
 ### 状態
 
 | 状態 | 見せ方 |
 | -- | -- |
-| 形式・サイズが許可されていない（`parseOriginalFile` の `reason`） | 入力欄の下に理由に応じた文言を出す |
-| 作成中 | 入力欄を無効にし、「サムネイルを作成中…」を出す |
-| PDF・画像として読めない（`pdf_unreadable`・`image_unreadable`） | 入力欄の下に文言を出す |
-| 想定外の失敗（worker を読み込めないなど） | `error.tsx` の汎用のエラー画面を出す |
-| 作成できた | サムネイルと、幅×高さ・大きさ・かかった時間を出す（動作確認用。ステップ4で見直す） |
+| 形式・サイズが許可されていない（`parseOriginalFile` の `reason`） | 原本の入力欄の下に理由に応じた文言を出す |
+| サムネイルの作成中 | 原本の入力欄と「登録する」を無効にし、「サムネイルを作成中…」を出す |
+| PDF・画像として読めない（`pdf_unreadable`・`image_unreadable`） | 原本の入力欄の下に文言を出す |
+| 原本を選んでいない・日時が入っていない | 送らずに、ボタンの上に文言を出す |
+| 登録中 | 原本の入力欄と「登録する」を無効にし、ボタンの文言を「登録中…」にする |
+| アップロードできない（通信できない・ストレージに拒否された） | 「アップロードできませんでした。通信の状態を確かめて、もう一度お試しください。」 |
+| タイトル・掲示期間が決まりに合わない | 理由に応じた文言を出す |
+| ファイルを確認できない（`file_invalid`。中身が申告した形式と違う、確認のあとに差し替えられた、など） | 「ファイルを確認できませんでした。ファイルを選び直して、もう一度お試しください。」 |
+| 上限に達している（`post_limit_exceeded`・`storage_limit_exceeded`） | 理由に応じた文言を出す |
+| 所属していない（`board_not_found`・`forbidden`。画面を開いたあとに所属が変わった場合） | 「この掲示板に掲示物を登録できません。」 |
+| 想定外の失敗（worker を読み込めない、DB・ストレージの障害など） | `error.tsx` の汎用のエラー画面を出す |
 
 ### 部品構成
 
 ```
 src/app/boards/[boardId]/posts/new/page.tsx  [Server] getBoard。失敗なら 404
-└ ThumbnailPreview                           [Client] modules/post/presentation
-   └ createThumbnail                         modules/post/presentation（PDF は pdf.js、画像は canvas）
+└ PostForm                                   [Client] modules/post/presentation
+   ├ createThumbnail                         PDF は pdf.js、画像は canvas
+   ├ createUploadUrlsAction                  [Server Action] createUploadUrls
+   ├ uploadFile                              署名付きの URL へ PUT
+   └ registerPostAction                      [Server Action] registerPost
 ```
 
 ---

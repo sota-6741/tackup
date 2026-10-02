@@ -228,3 +228,13 @@ test("失効させたあとは、同じ掲示板に新しい招待リンクを�
     token: "token-new",
   });
 });
+
+test("掲示板の行をロックして返す。ない掲示板と UUID 形式でない ID は null を返す", async () => {
+  const board = await repository.create({ name: "A", isPublic: false });
+
+  expect(await repository.lockById(board.id)).toEqual(board);
+  expect(
+    await repository.lockById("00000000-0000-0000-0000-000000000000"),
+  ).toBeNull();
+  expect(await repository.lockById("missing-board")).toBeNull();
+});

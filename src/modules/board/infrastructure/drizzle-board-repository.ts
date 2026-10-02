@@ -40,6 +40,16 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     return found ?? null;
   }
 
+  async function lockById(boardId: string): Promise<Board | null> {
+    if (!isUuid(boardId)) return null;
+    const [found] = await db
+      .select()
+      .from(board)
+      .where(eq(board.id, boardId))
+      .for("update");
+    return found ?? null;
+  }
+
   async function findAllByUserId(userId: string): Promise<Board[]> {
     const rows = await db
       .select({ board })
@@ -93,6 +103,7 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     addMember,
     addInviteToken,
     findById,
+    lockById,
     findAllByUserId,
     findMember,
     findActiveInviteToken,
