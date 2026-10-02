@@ -59,6 +59,7 @@ const REISSUE_INVITE_TOKEN_ERROR_MESSAGES: Record<
 > = {
   board_not_found: "再発行できませんでした。",
   forbidden: "再発行できませんでした。",
+  board_not_public: "再発行できませんでした。",
 };
 
 export async function reissueInviteTokenAction(

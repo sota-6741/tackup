@@ -19,10 +19,13 @@ export type ReissueInviteTokenInput = { boardId: string; userId: string };
 
 export type ReissueInviteTokenResult =
   | { ok: true; inviteUrl: string }
-  | { ok: false; reason: "board_not_found" | "forbidden" };
+  | {
+      ok: false;
+      reason: "board_not_found" | "forbidden" | "board_not_public";
+    };
 
 /**
- * 非公開の掲示板でも再発行できる。公開に戻す前に、以前のリンクを無効にできるようにするため。
+ * 再発行できるのは公開掲示板だけ。非公開の掲示板の以前のリンクを無効にしたいときは、公開に戻してから再発行する。
  * 同時に再発行されると、後の方は有効な招待リンクの一意の索引に違反して想定外のエラーになる。
  */
 export function makeReissueInviteToken({
@@ -43,14 +46,18 @@ export function makeReissueInviteToken({
     if (!access.ok) return access;
 
     const token = generateInviteToken();
-    await unitOfWork.run(async ({ boardRepository }) => {
+    return unitOfWork.run(async ({ boardRepository }) => {
+      const board = await boardRepository.findById(boardId);
+      if (!board) return { ok: false, reason: "board_not_found" };
+      if (!board.isPublic) return { ok: false, reason: "board_not_public" };
+
       // 有効な招待リンクは掲示板ごとに1つまで（一意の索引）なので、失効させてから追加する。
       await boardRepository.revokeActiveInviteToken(boardId);
       await boardRepository.addInviteToken({ boardId, token });
+      return {
+        ok: true,
+        inviteUrl: buildInviteUrl({ baseUrl: appBaseUrl, token }),
+      };
     });
-    return {
-      ok: true,
-      inviteUrl: buildInviteUrl({ baseUrl: appBaseUrl, token }),
-    };
   };
 }
