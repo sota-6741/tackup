@@ -1,5 +1,7 @@
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { expect, test } from "vitest";
-import { testDb } from "@/shared/testing/test-db";
+import { TEST_DATABASE_URL, testDb } from "@/shared/testing/test-db";
 import { makeDrizzleRateLimiter } from "./drizzle-rate-limiter";
 import { rateLimitCounter } from "./schema";
 
@@ -62,15 +64,26 @@ test("次の時間枠になると、また上限まで通り、前の枠の記�
   ]);
 });
 
-test("同時に数えても、数え漏れない", async () => {
-  const { rateLimiter } = setup();
+test("別々の接続から同時に数えても、数え漏れない", async () => {
+  // testDb は接続が 1 本で、同時に呼んでも順番に実行される。本当に並行させるために、接続を複数持つクライアントを使う。
+  const client = postgres(TEST_DATABASE_URL, { max: 8, onnotice: () => {} });
+  const rateLimiter = makeDrizzleRateLimiter({
+    db: drizzle(client),
+    now: () => new Date("2026-10-01T00:00:10Z"),
+  });
   const many = { ...rule, limit: 5 };
 
-  const results = await Promise.all(
-    Array.from({ length: 8 }, () =>
-      rateLimiter.consume({ rule: many, subject: "user-1" }),
-    ),
-  );
+  try {
+    const results = await Promise.all(
+      Array.from({ length: 16 }, () =>
+        rateLimiter.consume({ rule: many, subject: "user-1" }),
+      ),
+    );
 
-  expect(results.filter(Boolean)).toHaveLength(5);
+    expect(results.filter(Boolean)).toHaveLength(5);
+    const [row] = await testDb.select().from(rateLimitCounter);
+    expect(row.count).toBe(16);
+  } finally {
+    await client.end();
+  }
 });
