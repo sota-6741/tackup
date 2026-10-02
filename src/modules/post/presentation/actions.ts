@@ -79,7 +79,7 @@ const registerPostInput = z.object({
   boardId: z.string(),
   title: z.string(),
   publishFrom: z.iso.datetime(),
-  expiresAt: z.iso.datetime(),
+  expiresAt: z.iso.datetime().nullable(),
   originalKey: z.string(),
   thumbnailKey: z.string(),
   thumbnailWidth: z.number(),
@@ -112,14 +112,14 @@ export async function registerPostAction(
 
   const parsed = registerPostInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: UNEXPECTED_INPUT };
-  const { boardId } = parsed.data;
+  const { boardId, expiresAt } = parsed.data;
 
   const result = await registerPost({
     boardId,
     userId: session.user.id,
     title: parsed.data.title,
     publishFrom: new Date(parsed.data.publishFrom),
-    expiresAt: new Date(parsed.data.expiresAt),
+    expiresAt: expiresAt === null ? null : new Date(expiresAt),
     originalKey: parsed.data.originalKey,
     thumbnailKey: parsed.data.thumbnailKey,
     thumbnailWidth: parsed.data.thumbnailWidth,

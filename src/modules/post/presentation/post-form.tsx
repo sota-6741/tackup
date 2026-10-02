@@ -18,6 +18,7 @@ import type {
   ThumbnailError,
 } from "@/modules/post/domain/thumbnail";
 import { Button } from "@/shared/presentation/components/ui/button";
+import { Checkbox } from "@/shared/presentation/components/ui/checkbox";
 import { Input } from "@/shared/presentation/components/ui/input";
 import { Label } from "@/shared/presentation/components/ui/label";
 import { createUploadUrlsAction, registerPostAction } from "./actions";
@@ -61,22 +62,24 @@ function parsePostInput({
 }: {
   title: string;
   publishFrom: string;
-  expiresAt: string;
+  /** 無期限なら `null`。 */
+  expiresAt: string | null;
 }):
-  | { ok: true; publishFromIso: string; expiresAtIso: string }
+  | { ok: true; publishFromIso: string; expiresAtIso: string | null }
   | { ok: false; message: string } {
   const postTitle = parsePostTitle(title);
   if (!postTitle.ok) {
     return { ok: false, message: POST_INPUT_ERROR_MESSAGES[postTitle.reason] };
   }
   const publishFromIso = datetimeLocalToIso(publishFrom);
-  const expiresAtIso = datetimeLocalToIso(expiresAt);
-  if (!publishFromIso || !expiresAtIso) {
+  const expiresAtIso =
+    expiresAt === null ? null : datetimeLocalToIso(expiresAt);
+  if (!publishFromIso || (expiresAt !== null && !expiresAtIso)) {
     return { ok: false, message: POST_INPUT_ERROR_MESSAGES.period_invalid };
   }
   const period = parsePublishPeriod({
     publishFrom: new Date(publishFromIso),
-    expiresAt: new Date(expiresAtIso),
+    expiresAt: expiresAtIso === null ? null : new Date(expiresAtIso),
   });
   if (!period.ok) {
     return { ok: false, message: POST_INPUT_ERROR_MESSAGES[period.reason] };
@@ -89,6 +92,7 @@ export function PostForm({ boardId }: { boardId: string }) {
   const [title, setTitle] = useState("");
   const [publishFrom, setPublishFrom] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [unlimited, setUnlimited] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -157,7 +161,7 @@ export function PostForm({ boardId }: { boardId: string }) {
     file: File;
     thumbnail: Thumbnail;
     publishFromIso: string;
-    expiresAtIso: string;
+    expiresAtIso: string | null;
   }) {
     const urls = await createUploadUrlsAction({
       boardId,
@@ -201,10 +205,14 @@ export function PostForm({ boardId }: { boardId: string }) {
   function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (original.status !== "ready") {
-      setError("原本のファイルを選んでください。");
+      setError("ファイルを選んでください。");
       return;
     }
-    const period = parsePostInput({ title, publishFrom, expiresAt });
+    const period = parsePostInput({
+      title,
+      publishFrom,
+      expiresAt: unlimited ? null : expiresAt,
+    });
     if (!period.ok) {
       setError(period.message);
       return;
@@ -223,7 +231,7 @@ export function PostForm({ boardId }: { boardId: string }) {
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <Label htmlFor="post-original">
-          原本 <span className="text-muted-foreground">*</span>
+          ファイル <span className="text-muted-foreground">*</span>
         </Label>
         <Input
           id="post-original"
@@ -296,16 +304,22 @@ export function PostForm({ boardId }: { boardId: string }) {
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="post-expires-at">
-            掲示終了 <span className="text-muted-foreground">*</span>
+            掲示終了{" "}
+            {!unlimited && <span className="text-muted-foreground">*</span>}
           </Label>
           <Input
             id="post-expires-at"
             type="datetime-local"
-            required
+            required={!unlimited}
+            disabled={unlimited}
             min={publishFrom}
-            value={expiresAt}
+            value={unlimited ? "" : expiresAt}
             onChange={(event) => setExpiresAt(event.target.value)}
           />
+          <Label className="font-normal">
+            <Checkbox checked={unlimited} onCheckedChange={setUnlimited} />
+            無期限にする
+          </Label>
         </div>
       </div>
 

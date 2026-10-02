@@ -19,7 +19,8 @@ export type Post = {
   thumbnailWidth: number;
   thumbnailHeight: number;
   publishFrom: Date;
-  expiresAt: Date;
+  /** `null` は無期限。期限切れにならない。 */
+  expiresAt: Date | null;
   status: PostStatus;
   removedAt: Date | null;
   removedBy: string | null;
@@ -49,21 +50,27 @@ export function parsePostTitle(value: string): ParsePostTitleResult {
 export type PublishPeriodError = "period_invalid" | "expires_before_publish";
 
 export type ParsePublishPeriodResult =
-  | { ok: true; publishFrom: Date; expiresAt: Date }
+  | { ok: true; publishFrom: Date; expiresAt: Date | null }
   | { ok: false; reason: PublishPeriodError };
 
-/** 過去の日時も受け入れる。すでに貼り出した掲示物を、あとから記録できるようにするため。 */
+/**
+ * `expiresAt` が `null` なら無期限。
+ * 過去の日時も受け入れる。すでに貼り出した掲示物を、あとから記録できるようにするため。
+ */
 export function parsePublishPeriod({
   publishFrom,
   expiresAt,
 }: {
   publishFrom: Date;
-  expiresAt: Date;
+  expiresAt: Date | null;
 }): ParsePublishPeriodResult {
-  if (
-    Number.isNaN(publishFrom.getTime()) ||
-    Number.isNaN(expiresAt.getTime())
-  ) {
+  if (Number.isNaN(publishFrom.getTime())) {
+    return { ok: false, reason: "period_invalid" };
+  }
+  if (expiresAt === null) {
+    return { ok: true, publishFrom, expiresAt };
+  }
+  if (Number.isNaN(expiresAt.getTime())) {
     return { ok: false, reason: "period_invalid" };
   }
   if (expiresAt <= publishFrom) {

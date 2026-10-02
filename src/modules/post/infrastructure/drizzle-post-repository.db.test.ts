@@ -53,6 +53,14 @@ test("掲示物を登録すると、渡した ID と DB が振った日時を含
   expect(post.createdAt).toBeInstanceOf(Date);
 });
 
+test("掲示終了が null（無期限）の掲示物を登録できる", async () => {
+  const board = await createBoard();
+
+  const post = await repository.create(postData(board.id, { expiresAt: null }));
+
+  expect(post.expiresAt).toBeNull();
+});
+
 test("掲示終了が掲示開始より後でない掲示物は登録できない", async () => {
   const board = await createBoard();
   const data = postData(board.id, {

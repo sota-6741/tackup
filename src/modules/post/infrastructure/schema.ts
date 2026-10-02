@@ -35,7 +35,8 @@ export const post = pgTable(
     thumbnailWidth: integer("thumbnail_width").notNull(),
     thumbnailHeight: integer("thumbnail_height").notNull(),
     publishFrom: timestamp("publish_from", { withTimezone: true }).notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    // null は無期限。下の check は、null のときは成り立つものとして扱われる。
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
     status: text("status", { enum: POST_STATUSES }).notNull(),
     removedAt: timestamp("removed_at", { withTimezone: true }),
     removedBy: text("removed_by").references(() => user.id, {

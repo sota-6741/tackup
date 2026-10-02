@@ -45,6 +45,25 @@ test("掲示終了が掲示開始より後なら受け入れる", () => {
   });
 });
 
+test("掲示終了が null なら、無期限として受け入れる", () => {
+  const publishFrom = new Date("2026-10-01T00:00:00Z");
+
+  expect(parsePublishPeriod({ publishFrom, expiresAt: null })).toEqual({
+    ok: true,
+    publishFrom,
+    expiresAt: null,
+  });
+});
+
+test("無期限でも、掲示開始が日時として読めなければ period_invalid になる", () => {
+  const result = parsePublishPeriod({
+    publishFrom: new Date("invalid"),
+    expiresAt: null,
+  });
+
+  expect(result).toEqual({ ok: false, reason: "period_invalid" });
+});
+
 test("過去の掲示期間も受け入れる", () => {
   const publishFrom = new Date("2000-01-01T00:00:00Z");
   const expiresAt = new Date("2000-02-01T00:00:00Z");

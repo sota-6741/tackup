@@ -1,0 +1,1 @@
+ALTER TABLE "post" ALTER COLUMN "expires_at" DROP NOT NULL;

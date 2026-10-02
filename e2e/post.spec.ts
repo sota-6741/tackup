@@ -5,7 +5,7 @@ import { makePdfFile } from "../src/modules/post/testing/original-files";
 import { e2eDb } from "./support/db";
 import { signIn } from "./support/sign-in";
 
-test("原本を選んで掲示物を登録すると、掲示板ボードへ戻る", async ({
+test("ファイルを選んで掲示物を登録すると、掲示板ボードへ戻る", async ({
   page,
   context,
 }) => {
@@ -26,7 +26,7 @@ test("原本を選んで掲示物を登録すると、掲示板ボードへ戻�
   await expect(page).toHaveURL(`${boardUrl}/posts/new`);
 
   const pdf = await makePdfFile({ width: 595, height: 842 });
-  await page.getByLabel(/原本/).setInputFiles({
+  await page.getByLabel(/ファイル/).setInputFiles({
     name: "夏祭りのお知らせ.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from(await pdf.arrayBuffer()),
@@ -70,7 +70,7 @@ test("掲示終了が掲示開始より前だと、理由を表示して登録�
   await page.getByRole("link", { name: "掲示物を登録" }).click();
 
   const pdf = await makePdfFile({ width: 595, height: 842 });
-  await page.getByLabel(/原本/).setInputFiles({
+  await page.getByLabel(/ファイル/).setInputFiles({
     name: "夏祭りのお知らせ.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from(await pdf.arrayBuffer()),
@@ -90,4 +90,38 @@ test("掲示終了が掲示開始より前だと、理由を表示して登録�
     .from(post)
     .where(eq(post.boardId, boardId));
   expect(posts).toEqual([]);
+});
+
+test("無期限にすると、掲示終了を入れずに登録できる", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  await page.goto("/boards/new");
+  await page.getByLabel("掲示板名").fill("中野のボード");
+  await page.getByRole("button", { name: "作成する" }).click();
+  await expect(page).toHaveURL(/\/boards\/[0-9a-f-]{36}$/);
+  const boardUrl = page.url();
+  await page.getByRole("link", { name: "掲示物を登録" }).click();
+
+  const pdf = await makePdfFile({ width: 595, height: 842 });
+  await page.getByLabel(/ファイル/).setInputFiles({
+    name: "常設の案内.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from(await pdf.arrayBuffer()),
+  });
+  await expect(page.getByAltText("サムネイル")).toBeVisible();
+  await page.getByRole("checkbox", { name: "無期限にする" }).click();
+  await expect(page.getByLabel(/掲示終了/)).toBeDisabled();
+  await page.getByRole("button", { name: "登録する" }).click();
+
+  await expect(page).toHaveURL(boardUrl);
+  const boardId = boardUrl.split("/").at(-1) ?? "";
+  const posts = await e2eDb
+    .select()
+    .from(post)
+    .where(eq(post.boardId, boardId));
+  expect(posts).toEqual([
+    expect.objectContaining({ title: "常設の案内", expiresAt: null }),
+  ]);
 });
