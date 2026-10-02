@@ -37,6 +37,7 @@ bun run dev
 `.env` に `DEV_SIGN_IN=true` を書くと、`bun run dev` のときだけ、サインイン画面に「開発用ユーザーでサインイン」が出ます。押すと、決まった開発用ユーザー（`dev@tackup.invalid`）としてログインします。Google の認証情報を用意していないときは、`GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` に適当な値（`dev` など）を入れてください。
 
 - 有効になるのは、`NODE_ENV` が `development`（`next dev`）で、かつ `DEV_SIGN_IN=true` のときだけです。本番ビルド（`next build` → `next start`）では、環境変数を立てても有効になりません。CI の e2e が、本番ビルドに対してこれを確かめます。
+- `next dev` は、同じネットワークのほかの端末からも開けます。有効にしている間は、開発サーバーに届く人なら誰でも開発用ユーザーでログインできるので、共有のネットワーク（カフェの Wi-Fi など）では `DEV_SIGN_IN` を立てないでください。自分の端末からだけ開ければよいときは、`bun run dev -- --hostname 127.0.0.1` で起動します。
 - e2e のテストは、同じ仕組み（`e2e/support/sign-in.ts` の `signIn`）で、テストごとに新しいユーザーとしてログインします。作ったユーザーと掲示板は、接続先の DB に残ります。
 
 ## 本番に出すとき
