@@ -20,6 +20,9 @@ import { withSafeDatabaseErrors } from "@/shared/infrastructure/database-error";
 import type { DbExecutor } from "@/shared/infrastructure/db";
 import { post } from "./schema";
 
+/** URL から来る値。NUL 文字などを含む値で検索すると Postgres がエラーを投げるので、発行する ID に使う文字だけを通す。 */
+const PUBLIC_ID_PATTERN = /^[A-Za-z0-9_-]{1,100}$/;
+
 /**
  * 公開中の掲示物の条件。domain の `isPublished` と同じ決まりを SQL で書く。一覧の条件は、画面や use case ではなくここに置く。
  * 無期限（`expires_at` が NULL）の行は `expires_at > now` が真にならないので、NULL を明示して含める。
@@ -75,10 +78,20 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
       .limit(limit);
   }
 
+  async function findByPublicId(publicId: string): Promise<Post | null> {
+    if (!PUBLIC_ID_PATTERN.test(publicId)) return null;
+    const [found] = await db
+      .select()
+      .from(post)
+      .where(eq(post.publicId, publicId));
+    return found ?? null;
+  }
+
   return withSafeDatabaseErrors({
     create,
     countActiveByBoardId,
     sumFileSizeByBoardId,
     findPublished,
+    findByPublicId,
   });
 }

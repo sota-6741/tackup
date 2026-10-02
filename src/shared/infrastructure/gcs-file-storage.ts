@@ -15,6 +15,18 @@ function isMissing(error: unknown): boolean {
   return error instanceof ApiError && error.code === 404;
 }
 
+/**
+ * ヘッダーには ASCII 以外の文字をそのまま書けないので、RFC 5987 の形（`filename*=UTF-8''...`）でファイル名を渡す。
+ * `filename="..."` に日本語をそのまま入れると、ブラウザによっては文字化けする。
+ */
+function attachmentDisposition(fileName: string): string {
+  const encoded = encodeURIComponent(fileName).replace(
+    /['()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+  return `attachment; filename*=UTF-8''${encoded}`;
+}
+
 export function makeGcsFileStorage({
   storage,
   bucket,
@@ -54,6 +66,25 @@ export function makeGcsFileStorage({
       action: "read",
       expires: expiresAt(),
     });
+    return url;
+  }
+
+  async function createSaveUrl({
+    key,
+    fileName,
+  }: {
+    key: string;
+    fileName: string;
+  }): Promise<string> {
+    const [url] = await storage
+      .bucket(bucket)
+      .file(key)
+      .getSignedUrl({
+        version: "v4",
+        action: "read",
+        expires: expiresAt(),
+        responseDisposition: attachmentDisposition(fileName),
+      });
     return url;
   }
 
@@ -118,6 +149,7 @@ export function makeGcsFileStorage({
   return {
     createUploadUrl,
     createDownloadUrl,
+    createSaveUrl,
     readHead,
     move,
     delete: deleteFile,

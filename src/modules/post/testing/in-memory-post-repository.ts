@@ -56,11 +56,16 @@ export function makeInMemoryPostRepository() {
       .slice(0, limit);
   }
 
+  async function findByPublicId(publicId: string): Promise<Post | null> {
+    return posts.find((post) => post.publicId === publicId) ?? null;
+  }
+
   const repository: PostRepository = {
     create,
     countActiveByBoardId,
     sumFileSizeByBoardId,
     findPublished,
+    findByPublicId,
   };
 
   return { repository, posts };

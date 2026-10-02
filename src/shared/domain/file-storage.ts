@@ -21,6 +21,8 @@ export type FileHead = {
 export type FileStorage = {
   createUploadUrl: (input: CreateUploadUrlInput) => Promise<UploadUrl>;
   createDownloadUrl: (key: string) => Promise<string>;
+  /** 開くとブラウザが `fileName` の名前で保存する、取得用の URL。 */
+  createSaveUrl: (input: { key: string; fileName: string }) => Promise<string>;
   /** ファイルの先頭の `length` バイトと、保存されている種類・サイズ・世代を返す。ファイルがなければ `null`。 */
   readHead: (input: {
     key: string;

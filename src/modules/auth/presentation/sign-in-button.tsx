@@ -3,11 +3,12 @@
 import { Button } from "@/shared/presentation/components/ui/button";
 import { signIn } from "./auth-client";
 
-export function SignInButton() {
+/** `returnPath` は、ログイン後に移動する、このアプリの中のパス。 */
+export function SignInButton({ returnPath }: { returnPath: string }) {
   return (
     <Button
       onClick={() =>
-        signIn.social({ provider: "google", callbackURL: "/boards" })
+        signIn.social({ provider: "google", callbackURL: returnPath })
       }
     >
       Google でサインイン

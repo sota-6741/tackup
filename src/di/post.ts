@@ -4,6 +4,9 @@ import { checkBoardAccess } from "@/di/board";
 import { rateLimiter } from "@/di/rate-limiter";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
 import { makeCreateUploadUrls } from "@/modules/post/application/create-upload-urls";
+import { makeFindAccessiblePost } from "@/modules/post/application/find-accessible-post";
+import { makeGetPostDetail } from "@/modules/post/application/get-post-detail";
+import { makeGetPostFileUrl } from "@/modules/post/application/get-post-file-url";
 import { makeListBoardPosts } from "@/modules/post/application/list-board-posts";
 import { makeListPublicBoardPosts } from "@/modules/post/application/list-public-board-posts";
 import { makeListPublishedPosts } from "@/modules/post/application/list-published-posts";
@@ -63,4 +66,21 @@ export const listBoardPosts = makeListBoardPosts({
 export const listPublicBoardPosts = makeListPublicBoardPosts({
   boardRepository: makeDrizzleBoardRepository(db),
   listPublishedPosts,
+});
+
+/** 見てよいかの確認そのもの。確認した結果を使う use case に渡して使う。 */
+const findAccessiblePost = makeFindAccessiblePost({
+  postRepository,
+  boardRepository: makeDrizzleBoardRepository(db),
+  now: () => new Date(),
+});
+
+export const getPostDetail = makeGetPostDetail({
+  findAccessiblePost,
+  fileStorage,
+});
+
+export const getPostFileUrl = makeGetPostFileUrl({
+  findAccessiblePost,
+  fileStorage,
 });

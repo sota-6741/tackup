@@ -6,6 +6,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
+  // 掲示物の登録は、アップロードとサーバーでの確認を挟むので、ほかのテストと同時に動くと既定の 5 秒では足りないことがある。
+  expect: { timeout: 15_000 },
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
