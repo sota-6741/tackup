@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "vitest";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
+import { isPublished } from "@/modules/post/domain/post";
 import type { CreatePostData } from "@/modules/post/domain/post-repository";
+import {
+  NOW,
+  PUBLISH_STATE_EXAMPLES,
+} from "@/modules/post/testing/publish-state-examples";
 import { DatabaseError } from "@/shared/infrastructure/database-error";
 import { testDb } from "@/shared/testing/test-db";
 import { makeDrizzlePostRepository } from "./drizzle-post-repository";
@@ -134,4 +139,95 @@ test("掲示物のない掲示板では、数も合計も 0 になる", async ()
 
   expect(await repository.countActiveByBoardId(board.id)).toBe(0);
   expect(await repository.sumFileSizeByBoardId(board.id)).toBe(0);
+});
+
+test("公開中の掲示物だけを返す。無期限の掲示物も含め、domain の isPublished と同じ判定になる", async () => {
+  const board = await createBoard();
+  for (const {
+    name,
+    status,
+    publishFrom,
+    expiresAt,
+  } of PUBLISH_STATE_EXAMPLES) {
+    await repository.create(
+      postData(board.id, { title: name, status, publishFrom, expiresAt }),
+    );
+  }
+
+  const found = await repository.findPublished({
+    boardId: board.id,
+    now: NOW,
+    limit: 100,
+  });
+
+  const expected = PUBLISH_STATE_EXAMPLES.filter(
+    (example) => example.published,
+  ).map((example) => example.name);
+  expect(found.map((post) => post.title).sort()).toEqual(expected.sort());
+  expect(expected).toContain("無期限で、掲示開始を過ぎている");
+  expect(found.every((post) => isPublished(post, NOW))).toBe(true);
+});
+
+test("ほかの掲示板の掲示物は返さない", async () => {
+  const board = await createBoard();
+  const other = await createBoard();
+  await repository.create(postData(other.id));
+
+  const found = await repository.findPublished({
+    boardId: board.id,
+    now: new Date("2026-10-15T00:00:00Z"),
+    limit: 100,
+  });
+
+  expect(found).toEqual([]);
+});
+
+test("掲示開始の新しい順、同じ日時なら ID の大きい順に返し、続きを重複も抜けもなく取れる", async () => {
+  const board = await createBoard();
+  const sameTime = new Date("2026-10-05T00:00:00Z");
+  const ids = [
+    "00000000-0000-4000-8000-000000000001",
+    "00000000-0000-4000-8000-000000000002",
+    "00000000-0000-4000-8000-000000000003",
+  ];
+  for (const id of ids) {
+    await repository.create(
+      postData(board.id, { id, publicId: id, publishFrom: sameTime }),
+    );
+  }
+  const newest = await repository.create(
+    postData(board.id, { publishFrom: new Date("2026-10-10T00:00:00Z") }),
+  );
+  const oldest = await repository.create(
+    postData(board.id, { publishFrom: new Date("2026-10-01T00:00:00Z") }),
+  );
+  const now = new Date("2026-10-15T00:00:00Z");
+
+  const first = await repository.findPublished({
+    boardId: board.id,
+    now,
+    limit: 2,
+  });
+  const last = first[first.length - 1];
+  const second = await repository.findPublished({
+    boardId: board.id,
+    now,
+    limit: 2,
+    after: { publishFrom: last.publishFrom, id: last.id },
+  });
+  const secondLast = second[second.length - 1];
+  const third = await repository.findPublished({
+    boardId: board.id,
+    now,
+    limit: 2,
+    after: { publishFrom: secondLast.publishFrom, id: secondLast.id },
+  });
+
+  expect([...first, ...second, ...third].map((post) => post.id)).toEqual([
+    newest.id,
+    ids[2],
+    ids[1],
+    ids[0],
+    oldest.id,
+  ]);
 });

@@ -52,6 +52,12 @@ export const post = pgTable(
   },
   (table) => [
     index("post_board_id_idx").on(table.boardId),
+    // 公開中の一覧の絞り込みと並び順に合わせる。一覧は新しい順（降順）だが、索引は昇順で作る。
+    // 逆向きにたどれば降順になる。`.desc()` で作ると `DESC NULLS LAST` になり、問い合わせの `ORDER BY … DESC`（`NULLS FIRST` が既定）と
+    // 順序が合わず、並べ替えに使われない。列が NOT NULL でも、PostgreSQL は NULL の位置まで含めて照合する。
+    index("post_published_idx")
+      .on(table.boardId, table.publishFrom, table.id)
+      .where(sql`${table.status} = 'published'`),
     check(
       "post_expires_after_publish",
       sql`${table.expiresAt} > ${table.publishFrom}`,
