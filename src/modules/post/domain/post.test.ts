@@ -231,6 +231,10 @@ test.each([
   ["スキームのない文字列", "example.com/form"],
   ["パスだけ", "/boards"],
   ["長すぎる URL", `https://example.com/${"a".repeat(2000)}`],
+  [
+    "% の形に直すと長すぎる日本語の URL",
+    `https://example.com/${"あ".repeat(300)}`,
+  ],
 ])("外部リンクが %s なら external_url_invalid になる", (_, value) => {
   expect(parsePostExternalUrl(value)).toEqual({
     ok: false,

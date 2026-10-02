@@ -82,9 +82,10 @@ export function parsePostExternalUrl(
   if (trimmed.length === 0) return { ok: true, externalUrl: null };
 
   const url = toUrl(trimmed);
+  // 保存するのは読み直した URL（日本語のパスなどは % の形に変わって長くなる）なので、長さはそちらで確かめる。
   if (
-    trimmed.length > POST_EXTERNAL_URL_MAX_LENGTH ||
     !url ||
+    url.href.length > POST_EXTERNAL_URL_MAX_LENGTH ||
     (url.protocol !== "http:" && url.protocol !== "https:")
   ) {
     return { ok: false, reason: "external_url_invalid" };
