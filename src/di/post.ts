@@ -1,11 +1,34 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
 import { checkBoardAccess } from "@/di/board";
+import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
 import { makeCreateUploadUrls } from "@/modules/post/application/create-upload-urls";
+import { makeRegisterPost } from "@/modules/post/application/register-post";
+import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
+import { generatePublicId } from "@/modules/post/infrastructure/generate-public-id";
 import { generateUploadKey } from "@/modules/post/infrastructure/generate-upload-key";
+import { db } from "@/shared/infrastructure/db";
+import { makeDrizzleUnitOfWork } from "@/shared/infrastructure/drizzle-unit-of-work";
 import { fileStorage } from "@/shared/infrastructure/storage";
+
+const postRepository = makeDrizzlePostRepository(db);
+
+const unitOfWork = makeDrizzleUnitOfWork(db, (executor) => ({
+  boardRepository: makeDrizzleBoardRepository(executor),
+  postRepository: makeDrizzlePostRepository(executor),
+}));
 
 export const createUploadUrls = makeCreateUploadUrls({
   checkBoardAccess,
   fileStorage,
+  postRepository,
   generateUploadKey,
+});
+
+export const registerPost = makeRegisterPost({
+  checkBoardAccess,
+  fileStorage,
+  unitOfWork,
+  generatePostId: randomUUID,
+  generatePublicId,
 });

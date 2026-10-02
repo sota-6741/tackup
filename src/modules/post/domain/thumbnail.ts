@@ -45,3 +45,25 @@ export function parseThumbnailFile({
   }
   return { ok: true, contentType, size };
 }
+
+export type ParseThumbnailSizeResult =
+  | { ok: true; width: number; height: number }
+  | { ok: false; reason: "thumbnail_invalid" };
+
+function isSideLength(value: number): boolean {
+  return Number.isInteger(value) && value >= 1 && value <= THUMBNAIL_LONG_SIDE;
+}
+
+/** 幅と高さはブラウザが申告する値で、サーバーは画像を開いて確かめない。一覧の縦横比が崩れないよう、取りうる範囲だけ確かめる。 */
+export function parseThumbnailSize({
+  width,
+  height,
+}: {
+  width: number;
+  height: number;
+}): ParseThumbnailSizeResult {
+  if (!isSideLength(width) || !isSideLength(height)) {
+    return { ok: false, reason: "thumbnail_invalid" };
+  }
+  return { ok: true, width, height };
+}

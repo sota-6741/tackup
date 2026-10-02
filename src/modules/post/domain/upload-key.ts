@@ -24,3 +24,18 @@ export function isUploadKeyOf({
   const prefix = uploadKeyPrefix({ boardId, userId });
   return key.startsWith(prefix) && UUID_PATTERN.test(key.slice(prefix.length));
 }
+
+/** 確認を通ったファイルを置く、正式な場所のキー。 */
+export function postFileKeys({
+  boardId,
+  postId,
+}: {
+  boardId: string;
+  postId: string;
+}): { originalKey: string; thumbnailKey: string } {
+  const prefix = `boards/${boardId}/posts/${postId}/`;
+  return {
+    originalKey: `${prefix}original`,
+    thumbnailKey: `${prefix}thumbnail`,
+  };
+}

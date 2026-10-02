@@ -91,6 +91,7 @@ export function makeInMemoryBoardRepository() {
     addMember,
     addInviteToken,
     findById,
+    lockById: findById,
     findAllByUserId,
     findMember,
     findActiveInviteToken,

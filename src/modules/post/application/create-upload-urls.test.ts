@@ -2,43 +2,35 @@ import { expect, test } from "vitest";
 import { makeCheckBoardAccess } from "@/modules/board/application/check-board-access";
 import type { Role } from "@/modules/board/domain/board-member";
 import { makeInMemoryBoardRepository } from "@/modules/board/testing/in-memory-board-repository";
-import type {
-  CreateUploadUrlInput,
-  FileStorage,
-} from "@/shared/domain/file-storage";
+import {
+  BOARD_FILE_MAX_TOTAL_SIZE,
+  BOARD_POST_MAX_COUNT,
+  type PostStatus,
+} from "@/modules/post/domain/post";
+import { makeInMemoryPostRepository } from "@/modules/post/testing/in-memory-post-repository";
+import type { CreateUploadUrlInput } from "@/shared/domain/file-storage";
+import { makeInMemoryFileStorage } from "@/shared/testing/in-memory-file-storage";
 import { makeCreateUploadUrls } from "./create-upload-urls";
 
 const original = { contentType: "application/pdf", size: 1000 };
 const thumbnail = { contentType: "image/webp", size: 100 };
 
-function makeFakeFileStorage() {
-  const uploadUrlRequests: CreateUploadUrlInput[] = [];
-  const unused = async () => {
-    throw new Error("このテストでは使わない");
-  };
-  const fileStorage: FileStorage = {
-    async createUploadUrl(input) {
-      uploadUrlRequests.push(input);
-      return {
-        url: `https://storage.example.com/${input.key}`,
-        headers: { "content-type": input.contentType },
-      };
-    },
-    createDownloadUrl: unused,
-    readHead: unused,
-    move: unused,
-    delete: unused,
-  };
-  return { fileStorage, uploadUrlRequests };
-}
-
 async function setup() {
   const { repository, members } = makeInMemoryBoardRepository();
-  const { fileStorage, uploadUrlRequests } = makeFakeFileStorage();
+  const { repository: postRepository } = makeInMemoryPostRepository();
+  const { fileStorage } = makeInMemoryFileStorage();
+  const uploadUrlRequests: CreateUploadUrlInput[] = [];
   let issued = 0;
   const createUploadUrls = makeCreateUploadUrls({
     checkBoardAccess: makeCheckBoardAccess({ boardRepository: repository }),
-    fileStorage,
+    fileStorage: {
+      ...fileStorage,
+      async createUploadUrl(input) {
+        uploadUrlRequests.push(input);
+        return fileStorage.createUploadUrl(input);
+      },
+    },
+    postRepository,
     generateUploadKey: ({ boardId, userId }) => {
       issued += 1;
       return `pending/${boardId}/${userId}/key-${issued}`;
@@ -58,7 +50,34 @@ async function setup() {
     });
   }
 
-  return { createUploadUrls, uploadUrlRequests, board, addMember };
+  let posts = 0;
+  async function addPost({
+    originalSize = 1,
+    status = "removed",
+  }: {
+    originalSize?: number;
+    status?: PostStatus;
+  } = {}) {
+    posts += 1;
+    await postRepository.create({
+      id: `post-${posts}`,
+      publicId: `public-${posts}`,
+      boardId: board.id,
+      title: "既存の掲示物",
+      originalKey: `boards/${board.id}/posts/post-1/original`,
+      originalContentType: "application/pdf",
+      originalSize,
+      thumbnailKey: `boards/${board.id}/posts/post-1/thumbnail`,
+      thumbnailSize: 1,
+      thumbnailWidth: 800,
+      thumbnailHeight: 800,
+      publishFrom: new Date("2026-10-01T00:00:00Z"),
+      expiresAt: new Date("2026-11-01T00:00:00Z"),
+      status,
+    });
+  }
+
+  return { createUploadUrls, uploadUrlRequests, board, addMember, addPost };
 }
 
 test.each<Role>(["admin", "poster"])(
@@ -167,5 +186,43 @@ test("サムネイルの形式が合わなければ thumbnail_invalid になり�
   });
 
   expect(result).toEqual({ ok: false, reason: "thumbnail_invalid" });
+  expect(uploadUrlRequests).toEqual([]);
+});
+
+test("掲示板のファイルの合計が上限を超えるなら storage_limit_exceeded になり、URL を発行しない", async () => {
+  const { createUploadUrls, uploadUrlRequests, board, addMember, addPost } =
+    await setup();
+  addMember("poster");
+  await addPost({
+    originalSize: BOARD_FILE_MAX_TOTAL_SIZE - original.size - thumbnail.size,
+  });
+
+  const result = await createUploadUrls({
+    boardId: board.id,
+    userId: "user-1",
+    original,
+    thumbnail,
+  });
+
+  expect(result).toEqual({ ok: false, reason: "storage_limit_exceeded" });
+  expect(uploadUrlRequests).toEqual([]);
+});
+
+test("掲示物の数が上限に達していると post_limit_exceeded になり、URL を発行しない", async () => {
+  const { createUploadUrls, uploadUrlRequests, board, addMember, addPost } =
+    await setup();
+  addMember("poster");
+  for (let i = 0; i < BOARD_POST_MAX_COUNT; i++) {
+    await addPost({ status: "published" });
+  }
+
+  const result = await createUploadUrls({
+    boardId: board.id,
+    userId: "user-1",
+    original,
+    thumbnail,
+  });
+
+  expect(result).toEqual({ ok: false, reason: "post_limit_exceeded" });
   expect(uploadUrlRequests).toEqual([]);
 });

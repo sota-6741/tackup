@@ -36,6 +36,7 @@ test("CSP で、nonce の付いたスクリプトだけを動かし、違反な�
     /script-src 'self' 'nonce-[^']+' 'strict-dynamic' 'wasm-unsafe-eval'/,
   );
   expect(policy).toContain("worker-src 'self'");
+  expect(policy).toMatch(/connect-src 'self' https?:\/\/[^ ;]+(;|$)/);
   expect(policy).toContain("frame-ancestors 'none'");
   await expect(
     page.getByRole("button", { name: "Google でサインイン" }),

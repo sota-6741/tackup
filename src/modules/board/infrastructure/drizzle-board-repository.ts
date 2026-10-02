@@ -40,6 +40,17 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     return found ?? null;
   }
 
+  /** `FOR UPDATE` だと、この掲示板を参照する行（メンバーや掲示物）の追加まで待たせてしまう。同じロックを取る処理だけを待たせればよいので、`FOR NO KEY UPDATE` にする。 */
+  async function lockById(boardId: string): Promise<Board | null> {
+    if (!isUuid(boardId)) return null;
+    const [found] = await db
+      .select()
+      .from(board)
+      .where(eq(board.id, boardId))
+      .for("no key update");
+    return found ?? null;
+  }
+
   async function findAllByUserId(userId: string): Promise<Board[]> {
     const rows = await db
       .select({ board })
@@ -93,6 +104,7 @@ export function makeDrizzleBoardRepository(db: DbExecutor): BoardRepository {
     addMember,
     addInviteToken,
     findById,
+    lockById,
     findAllByUserId,
     findMember,
     findActiveInviteToken,

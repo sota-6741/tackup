@@ -1,18 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { BrowserContext } from "@playwright/test";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 import * as schema from "../../src/modules/auth/infrastructure/schema";
 import { makeCreateSessionCookies } from "../../src/modules/auth/infrastructure/test-auth";
+import { e2eDb } from "./db";
 
-// CI は環境変数を直接渡す。ローカルでは Next.js と同じ .env を読む。
-if (!process.env.DATABASE_URL) process.loadEnvFile();
-
-const { DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL } = process.env;
-if (!DATABASE_URL || !BETTER_AUTH_SECRET || !BETTER_AUTH_URL) {
+const { BETTER_AUTH_SECRET, BETTER_AUTH_URL } = process.env;
+if (!BETTER_AUTH_SECRET || !BETTER_AUTH_URL) {
   throw new Error(
-    "e2e のログインには DATABASE_URL・BETTER_AUTH_SECRET・BETTER_AUTH_URL が要ります",
+    "e2e のログインには BETTER_AUTH_SECRET・BETTER_AUTH_URL が要ります",
   );
 }
 
@@ -20,10 +16,7 @@ if (!DATABASE_URL || !BETTER_AUTH_SECRET || !BETTER_AUTH_URL) {
 const createSessionCookies = makeCreateSessionCookies({
   secret: BETTER_AUTH_SECRET,
   baseURL: BETTER_AUTH_URL,
-  database: drizzleAdapter(drizzle(postgres(DATABASE_URL, { max: 1 })), {
-    provider: "pg",
-    schema,
-  }),
+  database: drizzleAdapter(e2eDb, { provider: "pg", schema }),
 });
 
 const COOKIE_DOMAIN = new URL(BETTER_AUTH_URL).hostname;

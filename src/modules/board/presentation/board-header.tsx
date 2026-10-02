@@ -1,6 +1,8 @@
-import { GlobeIcon, LockIcon } from "lucide-react";
+import { GlobeIcon, LockIcon, PlusIcon } from "lucide-react";
+import Link from "next/link";
 import type { Role } from "@/modules/board/domain/board-member";
 import { Badge } from "@/shared/presentation/components/ui/badge";
+import { buttonVariants } from "@/shared/presentation/components/ui/button";
 import { InviteLinkSection } from "./invite-link-section";
 
 type BoardHeaderProps = {
@@ -36,6 +38,13 @@ export function BoardHeader({
             非公開
           </Badge>
         )}
+        <Link
+          href={`/boards/${boardId}/posts/new`}
+          className={buttonVariants({ className: "ml-auto" })}
+        >
+          <PlusIcon />
+          掲示物を登録
+        </Link>
       </div>
       {inviteUrl && (
         <InviteLinkSection
