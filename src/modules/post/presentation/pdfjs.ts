@@ -1,3 +1,4 @@
+import "client-only";
 import type { DocumentInitParameters } from "pdfjs-dist/types/src/display/api";
 
 const PDFJS_BASE_URL = "/pdfjs/";

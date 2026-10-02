@@ -1,3 +1,4 @@
+import "client-only";
 import type { OriginalContentType } from "@/modules/post/domain/original-file";
 import type { CreateThumbnailResult } from "@/modules/post/domain/thumbnail";
 import { createImageThumbnail } from "./create-image-thumbnail";
