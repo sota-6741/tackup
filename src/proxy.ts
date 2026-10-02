@@ -31,6 +31,7 @@ const STORAGE_ORIGIN = new URL(
  * 'wasm-unsafe-eval' は、pdf.js が PDF の中の画像（JPEG 2000 など）を WASM で展開するのに必要。WASM のコンパイルだけを許し、eval は許さない。
  * worker-src を書かないと script-src の 'strict-dynamic' を受け継ぎ、nonce を付けられない pdf.js の worker が動かない。
  * connect-src のストレージのオリジンは、ブラウザが原本とサムネイルを署名付きの URL へ直接 PUT するのに必要。
+ * img-src のストレージのオリジンは、サムネイルを署名付きの URL から表示するのに必要。
  */
 function contentSecurityPolicy(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
@@ -40,7 +41,7 @@ function contentSecurityPolicy(nonce: string): string {
     "worker-src 'self'",
     `connect-src 'self' ${STORAGE_ORIGIN}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' blob: data: https://lh3.googleusercontent.com",
+    `img-src 'self' blob: data: https://lh3.googleusercontent.com ${STORAGE_ORIGIN}`,
     "font-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",

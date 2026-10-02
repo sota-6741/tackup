@@ -53,6 +53,15 @@ export type ParsePublishPeriodResult =
   | { ok: true; publishFrom: Date; expiresAt: Date | null }
   | { ok: false; reason: PublishPeriodError };
 
+/** 扱える日時の範囲（1970 年の初めから 9999 年の終わりまで）。この外の日時は、DB や一覧の続きの位置で扱えない。 */
+const POST_TIME_MIN = 0;
+const POST_TIME_MAX = Date.UTC(9999, 11, 31, 23, 59, 59, 999);
+
+function isPostTime(date: Date): boolean {
+  const time = date.getTime();
+  return time >= POST_TIME_MIN && time <= POST_TIME_MAX;
+}
+
 /**
  * `expiresAt` が `null` なら無期限。
  * 過去の日時も受け入れる。すでに貼り出した掲示物を、あとから記録できるようにするため。
@@ -64,13 +73,13 @@ export function parsePublishPeriod({
   publishFrom: Date;
   expiresAt: Date | null;
 }): ParsePublishPeriodResult {
-  if (Number.isNaN(publishFrom.getTime())) {
+  if (!isPostTime(publishFrom)) {
     return { ok: false, reason: "period_invalid" };
   }
   if (expiresAt === null) {
     return { ok: true, publishFrom, expiresAt };
   }
-  if (Number.isNaN(expiresAt.getTime())) {
+  if (!isPostTime(expiresAt)) {
     return { ok: false, reason: "period_invalid" };
   }
   if (expiresAt <= publishFrom) {
@@ -123,6 +132,6 @@ export function parsePostCursor(value: string): PostCursor | null {
   const match = CURSOR_PATTERN.exec(value);
   if (!match) return null;
   const publishFrom = new Date(Number(match[1]));
-  if (Number.isNaN(publishFrom.getTime())) return null;
+  if (!isPostTime(publishFrom)) return null;
   return { publishFrom, id: match[2] };
 }

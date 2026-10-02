@@ -4,6 +4,8 @@ import { checkBoardAccess } from "@/di/board";
 import { rateLimiter } from "@/di/rate-limiter";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
 import { makeCreateUploadUrls } from "@/modules/post/application/create-upload-urls";
+import { makeListBoardPosts } from "@/modules/post/application/list-board-posts";
+import { makeListPublishedPosts } from "@/modules/post/application/list-published-posts";
 import { makeRegisterPost } from "@/modules/post/application/register-post";
 import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
 import { generatePublicId } from "@/modules/post/infrastructure/generate-public-id";
@@ -44,3 +46,15 @@ export const registerPost = withRateLimit(
   }),
   { rateLimiter, rule: WRITE_RATE_LIMIT },
 );
+
+/** 掲示板を見てよいかを確かめないので、ここからは出さない。確かめる use case に渡して使う。 */
+const listPublishedPosts = makeListPublishedPosts({
+  postRepository,
+  fileStorage,
+  now: () => new Date(),
+});
+
+export const listBoardPosts = makeListBoardPosts({
+  checkBoardAccess,
+  listPublishedPosts,
+});

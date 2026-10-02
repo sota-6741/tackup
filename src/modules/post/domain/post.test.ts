@@ -72,6 +72,36 @@ test("無期限でも、掲示開始が日時として読めなければ period_
   expect(result).toEqual({ ok: false, reason: "period_invalid" });
 });
 
+test.each([
+  [
+    "1970 年より前の掲示開始",
+    { publishFrom: "1969-12-31T23:59:59Z", expiresAt: null },
+  ],
+  [
+    "9999 年より先の掲示終了",
+    {
+      publishFrom: "2026-10-01T00:00:00Z",
+      expiresAt: "+010000-01-01T00:00:00Z",
+    },
+  ],
+])("%s は period_invalid になる", (_, period) => {
+  const result = parsePublishPeriod({
+    publishFrom: new Date(period.publishFrom),
+    expiresAt: period.expiresAt === null ? null : new Date(period.expiresAt),
+  });
+
+  expect(result).toEqual({ ok: false, reason: "period_invalid" });
+});
+
+test("扱える範囲の端（1970 年の初めと 9999 年の終わり）は受け入れる", () => {
+  const result = parsePublishPeriod({
+    publishFrom: new Date("1970-01-01T00:00:00Z"),
+    expiresAt: new Date("9999-12-31T23:59:59.999Z"),
+  });
+
+  expect(result.ok).toBe(true);
+});
+
 test("過去の掲示期間も受け入れる", () => {
   const publishFrom = new Date("2000-01-01T00:00:00Z");
   const expiresAt = new Date("2000-02-01T00:00:00Z");
@@ -129,7 +159,19 @@ test.each([
     "日時として大きすぎる",
     "9999999999999999_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
   ],
+  [
+    "西暦 10000 年以降の日時",
+    "253402300800000_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  ],
   ["余分な文字が続く", "1790000000000_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b'--"],
 ])("続きの位置が %s なら null になる", (_, value) => {
   expect(parsePostCursor(value)).toBeNull();
+});
+
+test("西暦 9999 年の終わりまでの日時は、続きの位置として受け入れる", () => {
+  const cursor = parsePostCursor(
+    "253402300799999_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  );
+
+  expect(cursor?.publishFrom.toISOString()).toBe("9999-12-31T23:59:59.999Z");
 });

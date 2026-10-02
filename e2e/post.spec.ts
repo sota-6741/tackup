@@ -5,7 +5,7 @@ import { makePdfFile } from "../src/modules/post/testing/original-files";
 import { e2eDb } from "./support/db";
 import { signIn } from "./support/sign-in";
 
-test("ファイルを選んで掲示物を登録すると、掲示板ボードへ戻る", async ({
+test("ファイルを選んで掲示物を登録すると、掲示板ボードに表示される", async ({
   page,
   context,
 }) => {
@@ -40,7 +40,19 @@ test("ファイルを選んで掲示物を登録すると、掲示板ボード�
   await expect(page).toHaveURL(boardUrl);
   expect(violations).toEqual([]);
 
-  // 掲示物の表示はまだないので、登録されたことは DB で確かめる。
+  // 登録した掲示物が、掲示板ボードにサムネイルとタイトルで出る。
+  await expect(page.getByText("夏祭りのお知らせ")).toBeVisible();
+  const thumbnail = page.locator("figure img");
+  await expect(thumbnail).toHaveCount(1);
+  await expect
+    .poll(() =>
+      thumbnail.evaluate(
+        (image: HTMLImageElement) => image.complete && image.naturalWidth,
+      ),
+    )
+    .toBe(565);
+  expect(violations).toEqual([]);
+
   const boardId = boardUrl.split("/").at(-1) ?? "";
   const posts = await e2eDb
     .select()
