@@ -45,6 +45,7 @@ export default async function PostManagementPage({
         </p>
       </header>
       <ManagedPostList
+        boardId={board.id}
         posts={management.posts}
         nextHref={
           management.nextCursor &&

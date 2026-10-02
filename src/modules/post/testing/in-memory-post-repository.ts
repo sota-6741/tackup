@@ -12,6 +12,7 @@ import type {
   FindPublishedInput,
   MarkRemovedInput,
   PostRepository,
+  UpdatePostData,
 } from "@/modules/post/domain/post-repository";
 
 export function makeInMemoryPostRepository() {
@@ -100,6 +101,13 @@ export function makeInMemoryPostRepository() {
     return true;
   }
 
+  async function update({ id, ...data }: UpdatePostData): Promise<boolean> {
+    const post = posts.find((item) => item.id === id);
+    if (!post || post.status === "removed") return false;
+    Object.assign(post, data, { updatedAt: new Date() });
+    return true;
+  }
+
   async function findByPublicId(publicId: string): Promise<Post | null> {
     return posts.find((post) => post.publicId === publicId) ?? null;
   }
@@ -112,6 +120,7 @@ export function makeInMemoryPostRepository() {
     findByBoardId,
     findExpired,
     markRemoved,
+    update,
     findByPublicId,
   };
 

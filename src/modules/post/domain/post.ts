@@ -174,6 +174,11 @@ export function isRemovable(post: Pick<Post, "status">): boolean {
   return post.status === "published";
 }
 
+/** 編集できるか。撤去済みは過去の記録なので、書き換えない。 */
+export function isEditable(post: Pick<Post, "status">): boolean {
+  return post.status !== "removed";
+}
+
 /** 一覧の 1 ページの件数。 */
 export const POST_PAGE_SIZE = 50;
 

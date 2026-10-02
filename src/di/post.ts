@@ -5,6 +5,7 @@ import { rateLimiter } from "@/di/rate-limiter";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
 import { makeCreateUploadUrls } from "@/modules/post/application/create-upload-urls";
 import { makeFindAccessiblePost } from "@/modules/post/application/find-accessible-post";
+import { makeGetEditablePost } from "@/modules/post/application/get-editable-post";
 import { makeGetPostDetail } from "@/modules/post/application/get-post-detail";
 import { makeGetPostFileUrl } from "@/modules/post/application/get-post-file-url";
 import { makeGetPostQrCode } from "@/modules/post/application/get-post-qr-code";
@@ -16,6 +17,7 @@ import { makeListRemovalTasks } from "@/modules/post/application/list-removal-ta
 import { makeRecordPostView } from "@/modules/post/application/record-post-view";
 import { makeRegisterPost } from "@/modules/post/application/register-post";
 import { makeRemovePost } from "@/modules/post/application/remove-post";
+import { makeUpdatePost } from "@/modules/post/application/update-post";
 import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
 import { makeDrizzleViewLogRepository } from "@/modules/post/infrastructure/drizzle-view-log-repository";
 import { generatePublicId } from "@/modules/post/infrastructure/generate-public-id";
@@ -92,6 +94,17 @@ export const listRemovalTasks = makeListRemovalTasks({
 
 export const removePost = withRateLimit(
   makeRemovePost({ checkBoardAccess, postRepository, now: () => new Date() }),
+  { rateLimiter, rule: WRITE_RATE_LIMIT },
+);
+
+export const getEditablePost = makeGetEditablePost({
+  checkBoardAccess,
+  postRepository,
+  fileStorage,
+});
+
+export const updatePost = withRateLimit(
+  makeUpdatePost({ checkBoardAccess, postRepository }),
   { rateLimiter, rule: WRITE_RATE_LIMIT },
 );
 

@@ -6,6 +6,7 @@ import {
 import {
   encodePostCursor,
   encodeRemovalCursor,
+  isEditable,
   isExpired,
   isPublished,
   isRemovable,
@@ -275,3 +276,11 @@ test.each([
     expect(isRemovable({ status })).toBe(removable);
   },
 );
+
+test.each([
+  ["published", true],
+  ["draft", true],
+  ["removed", false],
+] as const)("状態が %s の掲示物を編集できるか: %s", (status, editable) => {
+  expect(isEditable({ status })).toBe(editable);
+});

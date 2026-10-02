@@ -15,13 +15,18 @@ const STATE_LABELS: Record<PostDisplayState, string> = {
 };
 
 type ManagedPostListProps = {
+  boardId: string;
   posts: ManagedPostView[];
   /** 続きのページの URL。続きがなければ `null`。 */
   nextHref: string | null;
 };
 
 /** 掲示板のすべての掲示物を、状態を付けて並べる。サムネイルは、掲示板ボードと同じ理由で遅延読み込みにしない。 */
-export function ManagedPostList({ posts, nextHref }: ManagedPostListProps) {
+export function ManagedPostList({
+  boardId,
+  posts,
+  nextHref,
+}: ManagedPostListProps) {
   if (posts.length === 0) {
     return (
       <p className="py-16 text-center text-muted-foreground text-sm">
@@ -79,9 +84,19 @@ export function ManagedPostList({ posts, nextHref }: ManagedPostListProps) {
                 </p>
               )}
             </div>
-            {post.canRemove && (
-              <RemovePostButton publicId={post.publicId} title={post.title} />
-            )}
+            <div className="flex gap-2">
+              {post.canEdit && (
+                <Link
+                  href={`/boards/${boardId}/posts/${post.publicId}/edit`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  編集
+                </Link>
+              )}
+              {post.canRemove && (
+                <RemovePostButton publicId={post.publicId} title={post.title} />
+              )}
+            </div>
           </li>
         ))}
       </ul>

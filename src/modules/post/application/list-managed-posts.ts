@@ -5,6 +5,7 @@ import type {
 import { ROLES } from "@/modules/board/domain/board-member";
 import {
   encodePostCursor,
+  isEditable,
   isRemovable,
   POST_PAGE_SIZE,
   parsePostCursor,
@@ -46,6 +47,7 @@ export type ManagedPostView = {
   /** 撤去済みでなければ `null`。 */
   removedAt: Date | null;
   canRemove: boolean;
+  canEdit: boolean;
 };
 
 export type ListManagedPostsResult =
@@ -97,6 +99,7 @@ export function makeListManagedPosts({
         state: postDisplayState(post, current),
         removedAt: post.removedAt,
         canRemove: isRemovable(post),
+        canEdit: isEditable(post),
       })),
     );
     return {
