@@ -57,6 +57,13 @@
       "when": 1790937283230,
       "tag": "0007_short_spencer_smythe",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790940476825,
+      "tag": "0008_thankful_manta",
+      "breakpoints": true
     }
   ]
 }

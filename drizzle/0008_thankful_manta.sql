@@ -1,0 +1,1 @@
+CREATE INDEX "post_published_idx" ON "post" USING btree ("board_id","publish_from","id") WHERE "post"."status" = 'published';

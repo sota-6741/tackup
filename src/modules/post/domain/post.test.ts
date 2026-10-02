@@ -1,6 +1,14 @@
 import { expect, test } from "vitest";
 import {
+  NOW,
+  PUBLISH_STATE_EXAMPLES,
+} from "@/modules/post/testing/publish-state-examples";
+import {
+  encodePostCursor,
+  isExpired,
+  isPublished,
   POST_TITLE_MAX_LENGTH,
+  parsePostCursor,
   parsePostTitle,
   parsePublishPeriod,
 } from "./post";
@@ -93,4 +101,35 @@ test.each([
   });
 
   expect(result).toEqual({ ok: false, reason: "period_invalid" });
+});
+
+test.each(PUBLISH_STATE_EXAMPLES)(
+  "$name: 公開中は $published、期限切れは $expired",
+  ({ published, expired, ...post }) => {
+    expect(isPublished(post, NOW)).toBe(published);
+    expect(isExpired(post, NOW)).toBe(expired);
+  },
+);
+
+test("続きの位置は、文字列にしてから元に戻せる", () => {
+  const cursor = {
+    publishFrom: new Date("2026-10-01T09:00:00.123Z"),
+    id: "3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  };
+
+  expect(parsePostCursor(encodePostCursor(cursor))).toEqual(cursor);
+});
+
+test.each([
+  ["空文字", ""],
+  ["日時がない", "_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b"],
+  ["ID が UUID でない", "1790000000000_post-1"],
+  ["日時が数字でない", "abc_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b"],
+  [
+    "日時として大きすぎる",
+    "9999999999999999_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  ],
+  ["余分な文字が続く", "1790000000000_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b'--"],
+])("続きの位置が %s なら null になる", (_, value) => {
+  expect(parsePostCursor(value)).toBeNull();
 });
