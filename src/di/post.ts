@@ -7,6 +7,7 @@ import { makeCreateUploadUrls } from "@/modules/post/application/create-upload-u
 import { makeFindAccessiblePost } from "@/modules/post/application/find-accessible-post";
 import { makeGetPostDetail } from "@/modules/post/application/get-post-detail";
 import { makeGetPostFileUrl } from "@/modules/post/application/get-post-file-url";
+import { makeGetPostQrCode } from "@/modules/post/application/get-post-qr-code";
 import { makeListBoardPosts } from "@/modules/post/application/list-board-posts";
 import { makeListPublicBoardPosts } from "@/modules/post/application/list-public-board-posts";
 import { makeListPublishedPosts } from "@/modules/post/application/list-published-posts";
@@ -15,12 +16,14 @@ import { makeRegisterPost } from "@/modules/post/application/register-post";
 import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
 import { makeDrizzleViewLogRepository } from "@/modules/post/infrastructure/drizzle-view-log-repository";
 import { generatePublicId } from "@/modules/post/infrastructure/generate-public-id";
+import { generateQrCodeSvg } from "@/modules/post/infrastructure/generate-qr-code-svg";
 import { generateUploadKey } from "@/modules/post/infrastructure/generate-upload-key";
 import {
   UPLOAD_URL_RATE_LIMIT,
   WRITE_RATE_LIMIT,
   withRateLimit,
 } from "@/shared/domain/rate-limiter";
+import { appBaseUrl } from "@/shared/infrastructure/app-url";
 import { db } from "@/shared/infrastructure/db";
 import { makeDrizzleUnitOfWork } from "@/shared/infrastructure/drizzle-unit-of-work";
 import { fileStorage } from "@/shared/infrastructure/storage";
@@ -85,6 +88,12 @@ export const getPostDetail = makeGetPostDetail({
 export const getPostFileUrl = makeGetPostFileUrl({
   findAccessiblePost,
   fileStorage,
+});
+
+export const getPostQrCode = makeGetPostQrCode({
+  findAccessiblePost,
+  generateQrCodeSvg,
+  appBaseUrl,
 });
 
 export const recordPostView = makeRecordPostView({

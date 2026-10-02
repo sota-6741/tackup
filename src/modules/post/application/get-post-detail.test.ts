@@ -6,6 +6,7 @@ import { makeInMemoryFileStorage } from "@/shared/testing/in-memory-file-storage
 import { makeFindAccessiblePost } from "./find-accessible-post";
 import { makeGetPostDetail } from "./get-post-detail";
 import { makeGetPostFileUrl } from "./get-post-file-url";
+import { makeGetPostQrCode } from "./get-post-qr-code";
 
 const NOW = new Date("2026-10-15T00:00:00Z");
 const STORAGE = "https://storage.example.com";
@@ -58,6 +59,11 @@ async function setup({
   return {
     getPostDetail: makeGetPostDetail({ findAccessiblePost, fileStorage }),
     getPostFileUrl: makeGetPostFileUrl({ findAccessiblePost, fileStorage }),
+    getPostQrCode: makeGetPostQrCode({
+      findAccessiblePost,
+      generateQrCodeSvg: async (text) => `<svg>${text}</svg>`,
+      appBaseUrl: "https://tackup.example.com",
+    }),
     board,
     post,
   };
@@ -86,6 +92,7 @@ test("公開掲示板の公開中の掲示物は、ログインしていない�
         height: 800,
       },
       boardId: null,
+      hasQrCode: false,
     },
   });
 });
@@ -115,7 +122,10 @@ test("メンバーには、掲示板へ戻るための掲示板の ID も返す"
     userId: "member",
   });
 
-  expect(result).toMatchObject({ ok: true, post: { boardId: board.id } });
+  expect(result).toMatchObject({
+    ok: true,
+    post: { boardId: board.id, hasQrCode: true },
+  });
 });
 
 test("期限切れの掲示物は、メンバーには状態を付けて返し、それ以外の人には post_not_found を返す", async () => {
@@ -187,3 +197,55 @@ test("見られない人には、原本の URL を発行しない", async () => 
     await getPostFileUrl({ publicId: "public-1", userId: null, mode: "save" }),
   ).toEqual({ ok: false, reason: "sign_in_required" });
 });
+
+test("メンバーには、掲示物詳細の URL の QR コードを返す", async () => {
+  const { getPostQrCode } = await setup({ isPublic: true });
+
+  const result = await getPostQrCode({
+    publicId: "public-1",
+    userId: "member",
+  });
+
+  expect(result).toEqual({
+    ok: true,
+    svg: "<svg>https://tackup.example.com/posts/public-1</svg>",
+  });
+});
+
+test.each([
+  ["掲示開始前", { publishFrom: new Date("2026-10-20T00:00:00Z") }, true],
+  ["期限切れ", { expiresAt: new Date("2026-10-10T00:00:00Z") }, true],
+  ["撤去済み", { status: "removed" }, false],
+  ["下書き", { status: "draft" }, false],
+] as const)(
+  "%sの掲示物の QR コードを、メンバーに出すか",
+  async (_, post, issued) => {
+    const { getPostQrCode, getPostDetail } = await setup({
+      isPublic: true,
+      post,
+    });
+    const input = { publicId: "public-1", userId: "member" };
+
+    expect((await getPostQrCode(input)).ok).toBe(issued);
+    expect(await getPostDetail(input)).toMatchObject({
+      post: { hasQrCode: issued },
+    });
+  },
+);
+
+test.each([
+  ["公開掲示板", true],
+  ["非公開の掲示板", false],
+])(
+  "%sの掲示物の QR コードは、メンバーでない人には出さない",
+  async (_, isPublic) => {
+    const { getPostQrCode } = await setup({ isPublic });
+
+    for (const userId of ["stranger", null]) {
+      expect(await getPostQrCode({ publicId: "public-1", userId })).toEqual({
+        ok: false,
+        reason: "post_not_found",
+      });
+    }
+  },
+);

@@ -1,4 +1,5 @@
 import {
+  canIssueQrCode,
   type PostDisplayState,
   postDisplayState,
 } from "@/modules/post/domain/post-access";
@@ -30,6 +31,8 @@ export type PostDetail = {
   image: { url: string; width: number; height: number } | { url: string };
   /** メンバーにだけ渡す。メンバー向けの掲示板ボードへ戻る導線に使う。 */
   boardId: string | null;
+  /** QR コードを出せるか。メンバーで、撤去済みでも下書きでもないとき。 */
+  hasQrCode: boolean;
 };
 
 export type GetPostDetailResult =
@@ -45,6 +48,7 @@ export function makeGetPostDetail({ findAccessiblePost, fileStorage }: Deps) {
     if (!found.ok) return found;
     const { post, isMember, now } = found;
 
+    const state = postDisplayState(post, now);
     const isPdf = post.originalContentType === "application/pdf";
     const image = isPdf
       ? {
@@ -64,10 +68,11 @@ export function makeGetPostDetail({ findAccessiblePost, fileStorage }: Deps) {
         externalUrl: post.externalUrl,
         publishFrom: post.publishFrom,
         expiresAt: post.expiresAt,
-        state: postDisplayState(post, now),
+        state,
         isPdf,
         image,
         boardId: isMember ? post.boardId : null,
+        hasQrCode: isMember && canIssueQrCode(state),
       },
     };
   };
