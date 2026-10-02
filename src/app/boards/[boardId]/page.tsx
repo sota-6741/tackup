@@ -25,6 +25,10 @@ export default async function BoardPage({
     }),
   ]);
   if (!result.ok || !posts.ok) notFound();
+  // 続きのページが空になった（前のページを開いたあとに、残りの掲示期間が終わったなど）ときは、最初のページへ戻す。
+  if (after !== undefined && posts.posts.length === 0) {
+    redirect(`/boards/${boardId}`);
+  }
   const { board, role, inviteUrl } = result;
 
   return (

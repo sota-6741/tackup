@@ -129,7 +129,19 @@ test.each([
     "日時として大きすぎる",
     "9999999999999999_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
   ],
+  [
+    "西暦 10000 年以降の日時",
+    "253402300800000_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  ],
   ["余分な文字が続く", "1790000000000_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b'--"],
 ])("続きの位置が %s なら null になる", (_, value) => {
   expect(parsePostCursor(value)).toBeNull();
+});
+
+test("西暦 9999 年の終わりまでの日時は、続きの位置として受け入れる", () => {
+  const cursor = parsePostCursor(
+    "253402300799999_3f2b8c1e-5a4d-4e6f-9a7b-0c1d2e3f4a5b",
+  );
+
+  expect(cursor?.publishFrom.toISOString()).toBe("9999-12-31T23:59:59.999Z");
 });

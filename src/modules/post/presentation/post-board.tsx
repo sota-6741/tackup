@@ -8,7 +8,10 @@ type PostBoardProps = {
   nextHref: string | null;
 };
 
-/** 公開中の掲示物を masonry で並べる。メンバー向けと一般閲覧者向けの両方で使うので、管理用の導線は置かない。 */
+/**
+ * 公開中の掲示物を masonry で並べる。メンバー向けと一般閲覧者向けの両方で使うので、管理用の導線は置かない。
+ * サムネイルは遅延読み込みにしない。署名付きの URL は数分で切れるので、あとからスクロールしたときに読み込むと失敗する。
+ */
 export function PostBoard({ posts, nextHref }: PostBoardProps) {
   if (posts.length === 0) {
     return (
@@ -30,7 +33,6 @@ export function PostBoard({ posts, nextHref }: PostBoardProps) {
                 alt=""
                 width={post.thumbnailWidth}
                 height={post.thumbnailHeight}
-                loading="lazy"
                 className="h-auto w-full rounded-md border bg-muted"
               />
               <figcaption className="break-words text-sm">

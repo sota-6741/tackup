@@ -118,11 +118,14 @@ export function encodePostCursor({ publishFrom, id }: PostCursor): string {
   return `${publishFrom.getTime()}_${id}`;
 }
 
+/** 西暦 9999 年の終わり。これより先の日時は、DB が日時として受け付けない書き方になる。 */
+const MAX_CURSOR_TIME = Date.UTC(9999, 11, 31, 23, 59, 59, 999);
+
 /** URL から来る値なので、形が合わなければ `null` にする。 */
 export function parsePostCursor(value: string): PostCursor | null {
   const match = CURSOR_PATTERN.exec(value);
   if (!match) return null;
-  const publishFrom = new Date(Number(match[1]));
-  if (Number.isNaN(publishFrom.getTime())) return null;
-  return { publishFrom, id: match[2] };
+  const time = Number(match[1]);
+  if (time > MAX_CURSOR_TIME) return null;
+  return { publishFrom: new Date(time), id: match[2] };
 }
