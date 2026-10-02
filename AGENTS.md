@@ -31,6 +31,8 @@ src/shared/{domain,infrastructure,presentation}/ 機能をまたぐコード（s
 - 依存は内側に向かうだけ。`bun run lint` が dependency-cruiser（`.dependency-cruiser.cjs`）で確かめる。
 - presentation は infrastructure を import しない。use case は `@/di/*` から受け取る。
 - `@/env` は infrastructure でだけ読む。
+- `src/di/` のファイルは先頭に `import "server-only"` を書く。Client Component から import するとビルドが失敗する。infrastructure には書かない（テスト・`scripts/`・CLI が Next.js の外で読み込むため）。
+- ブラウザでしか動かないモジュール（canvas・pdf.js など）は先頭に `import "client-only"` を書く。サーバー側から import するとビルドが失敗する。`"use client"` は Client Component の入口にだけ書く。
 - テスト用のコードは `testing/` に、開発用のツールは `scripts/` に置く。本番のコードはどちらも import しない（`bun run lint` の `no-testing-code-in-app`・`no-scripts-in-app` が確かめる）。
 
 # 詳しい決まり
