@@ -152,6 +152,18 @@ test.each<Role>(["admin", "poster"])(
   },
 );
 
+test("掲示終了を null にすると、無期限の掲示物として登録する", async () => {
+  const { registerPost, input, posts } = await setup();
+
+  const result = await registerPost({ ...input, expiresAt: null });
+
+  expect(result.ok).toBe(true);
+  expect(posts[0]).toMatchObject({
+    publishFrom: input.publishFrom,
+    expiresAt: null,
+  });
+});
+
 test("所属していないユーザーは board_not_found になり、ファイルに触れない", async () => {
   const { registerPost, input, posts, files } = await setup();
 

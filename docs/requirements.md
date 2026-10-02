@@ -152,10 +152,12 @@ removed
 
 期限切れ状態はステータスとして保存しない。
 
-期限切れかどうかは `expiresAt` と現在時刻から算出する。
+期限切れかどうかは `expiresAt` と現在時刻から算出する。`expiresAt` が未設定（無期限）の掲示物は、期限切れにならない（「10. 掲示期間」）。
 
 ```text
 status === "published"
+AND
+expiresAt が設定されている
 AND
 expiresAt <= now
 ```
@@ -172,7 +174,7 @@ expiresAt <= now
 * 原本ファイル（PDF または画像）
 * サムネイル
 * 掲示開始日時
-* 掲示終了日時
+* 掲示終了日時（無期限にもできる）
 * 掲示板
 * ステータス
 
@@ -290,6 +292,8 @@ publishFrom
 expiresAt
 ```
 
+`expiresAt` は未設定（無期限）にできる。常設の案内など、終わりを決めない掲示物のため。無期限の掲示物は期限切れにならない。以降の条件では、未設定の `expiresAt` を「`expiresAt > now` を常に満たし、`expiresAt <= now` を常に満たさない」ものとして扱う。
+
 一般閲覧者向けの掲示板に表示される条件は以下とする。
 
 ```text
@@ -297,7 +301,7 @@ status === "published"
 AND
 publishFrom <= now
 AND
-expiresAt > now
+（expiresAt が未設定 OR expiresAt > now）
 ```
 
 掲示開始前の掲示物は公開しない。
@@ -319,6 +323,8 @@ status === "published"
 AND
 expiresAt <= now
 ```
+
+無期限の掲示物は、この条件を満たすことがない。
 
 期限切れ掲示物は以下の扱いとする。
 
@@ -413,6 +419,8 @@ status === "published"
 AND
 expiresAt <= now
 ```
+
+無期限の掲示物は期限切れにならないので、撤去タスクには表示されない。無期限の掲示物を撤去済みにする操作は、台帳（ステップ8）で用意する。
 
 撤去タスクには最低限以下を表示する。
 
@@ -739,7 +747,7 @@ updatedAt
 
 原本は PDF とは限らないので、キーは `originalKey` とし、形式（`originalContentType`）も持つ。ファイルのサイズは、掲示板ごとの容量の上限（「34.2 利用量の上限」）を DB だけで確かめるために持つ。サムネイルの幅と高さは、masonry で縦横比を先に決めるために持つ。
 
-`expiresAt` が `publishFrom` より後であることは、DB の制約でも守る。掲示物のある掲示板は消せないよう、`boardId` の外部キーは削除を拒否する。
+`expiresAt` は、無期限のとき未設定（`null`）にする。設定されているときに `publishFrom` より後であることは、DB の制約でも守る。掲示物のある掲示板は消せないよう、`boardId` の外部キーは削除を拒否する。
 
 実際の型、nullable、リレーション等は実装に応じて定義する。
 
@@ -940,18 +948,20 @@ UIやAPI内で同じ日時条件を個別に再実装しない。
 isPublished =
   post.status === "published" &&
   post.publishFrom <= now &&
-  post.expiresAt > now
+  (post.expiresAt === null || post.expiresAt > now)
 ```
 
 ```ts
 isExpired =
   post.status === "published" &&
+  post.expiresAt !== null &&
   post.expiresAt <= now
 ```
 
 ```ts
 isRemovalRequired =
   post.status === "published" &&
+  post.expiresAt !== null &&
   post.expiresAt <= now
 ```
 
@@ -1194,6 +1204,11 @@ Post作成
 招待リンクからの閲覧は公開掲示板のみとし、公開設定による閲覧可否の判定を実装する。
 
 一般閲覧者向けの経路 `/b/{inviteToken}` をここで作る。メンバー向けの掲示板ボードはすでにこの URL を招待リンクとして表示しているので、この経路ができるまでリンクは 404 になる。
+
+公開状態の判定（「32. 公開状態判定」）をここで 1 か所にまとめる。無期限の掲示物は `expiresAt` が未設定（`null`）で、SQL の `expires_at > now()` は無期限の行で真にならない。そのまま書くと無期限の掲示物が掲示板から消えるので、次の 2 つを作り、どちらにも無期限の掲示物のテストを付ける。
+
+* domain の判定の関数（`isPublished`・`isExpired`）
+* Repository の中の、一覧の SQL の条件（公開中・期限切れ）。画面や use case ごとに条件を書かない
 
 ---
 

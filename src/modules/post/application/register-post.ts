@@ -48,7 +48,7 @@ export type RegisterPostInput = {
   userId: string;
   title: string;
   publishFrom: Date;
-  expiresAt: Date;
+  expiresAt: Date | null;
   originalKey: string;
   thumbnailKey: string;
   thumbnailWidth: number;

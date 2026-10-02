@@ -56,7 +56,7 @@ afterEach(() => {
 });
 
 async function selectFile(file: File) {
-  fireEvent.change(screen.getByLabelText(/原本/), {
+  fireEvent.change(screen.getByLabelText(/ファイル/), {
     target: { files: [file] },
   });
 }
@@ -73,7 +73,7 @@ async function fillAndSubmit() {
   fireEvent.click(screen.getByRole("button", { name: "登録する" }));
 }
 
-test("原本を選ぶとサムネイルを表示し、タイトルにファイル名を入れる", async () => {
+test("ファイルを選ぶとサムネイルを表示し、タイトルにファイル名を入れる", async () => {
   render(<PostForm boardId="board-1" />);
 
   await selectFile(pdf);
@@ -89,7 +89,7 @@ test("原本を選ぶとサムネイルを表示し、タイトルにファイ�
   });
 });
 
-test("先に入力したタイトルは、原本を選んでも書き換えない", async () => {
+test("先に入力したタイトルは、ファイルを選んでも書き換えない", async () => {
   render(<PostForm boardId="board-1" />);
   fireEvent.change(screen.getByLabelText(/タイトル/), {
     target: { value: "自分で付けた名前" },
@@ -126,13 +126,13 @@ test("PDF として読めないファイルは、理由を表示する", async (
   );
 });
 
-test("原本を選ばずに登録しようとすると、ファイルを選ぶよう表示する", async () => {
+test("ファイルを選ばずに登録しようとすると、ファイルを選ぶよう表示する", async () => {
   render(<PostForm boardId="board-1" />);
 
   fireEvent.click(screen.getByRole("button", { name: "登録する" }));
 
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "原本のファイルを選んでください。",
+    "ファイルを選んでください。",
   );
   expect(createUploadUrlsAction).not.toHaveBeenCalled();
 });
@@ -188,7 +188,7 @@ test("タイトルを空にすると、アップロードせずに理由を表�
   expect(createUploadUrlsAction).not.toHaveBeenCalled();
 });
 
-test("登録すると、URL を発行し、原本とサムネイルをアップロードしてから登録し、掲示板ボードへ移動する", async () => {
+test("登録すると、URL を発行し、ファイルとサムネイルをアップロードしてから登録し、掲示板ボードへ移動する", async () => {
   render(<PostForm boardId="board-1" />);
 
   await fillAndSubmit();
@@ -217,6 +217,50 @@ test("登録すると、URL を発行し、原本とサムネイルをアップ�
     thumbnailWidth: 565,
     thumbnailHeight: 800,
   });
+});
+
+test("無期限にすると、掲示終了を入れなくても登録でき、掲示終了は null で送る", async () => {
+  render(<PostForm boardId="board-1" />);
+  await selectFile(pdf);
+  await screen.findByAltText("サムネイル");
+  fireEvent.change(screen.getByLabelText(/掲示開始/), {
+    target: { value: "2026-10-01T09:00" },
+  });
+
+  fireEvent.click(screen.getByRole("checkbox", { name: "無期限にする" }));
+  expect(screen.getByLabelText(/掲示終了/)).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "登録する" }));
+
+  await waitFor(() => expect(push).toHaveBeenCalledWith("/boards/board-1"));
+  expect(registerPostAction).toHaveBeenCalledWith(
+    expect.objectContaining({
+      publishFrom: new Date(2026, 9, 1, 9, 0).toISOString(),
+      expiresAt: null,
+    }),
+  );
+});
+
+test("無期限にしたあとに外すと、入れてあった掲示終了で登録する", async () => {
+  render(<PostForm boardId="board-1" />);
+  await selectFile(pdf);
+  await screen.findByAltText("サムネイル");
+  fireEvent.change(screen.getByLabelText(/掲示開始/), {
+    target: { value: "2026-10-01T09:00" },
+  });
+  fireEvent.change(screen.getByLabelText(/掲示終了/), {
+    target: { value: "2026-11-01T09:00" },
+  });
+
+  fireEvent.click(screen.getByRole("checkbox", { name: "無期限にする" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "無期限にする" }));
+  fireEvent.click(screen.getByRole("button", { name: "登録する" }));
+
+  await waitFor(() => expect(push).toHaveBeenCalled());
+  expect(registerPostAction).toHaveBeenCalledWith(
+    expect.objectContaining({
+      expiresAt: new Date(2026, 10, 1, 9, 0).toISOString(),
+    }),
+  );
 });
 
 test("URL を発行できなければ理由を表示し、アップロードしない", async () => {
