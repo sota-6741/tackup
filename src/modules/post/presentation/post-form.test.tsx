@@ -33,11 +33,9 @@ const targets = {
 };
 
 beforeEach(() => {
-  vi.stubGlobal("URL", {
-    ...URL,
-    createObjectURL: () => "blob:thumbnail",
-    revokeObjectURL: () => {},
-  });
+  // jsdom には Blob の URL を作る機能がない。URL そのものは置き換えない（フォームが new URL を使うため）。
+  URL.createObjectURL = () => "blob:thumbnail";
+  URL.revokeObjectURL = () => {};
   vi.mocked(createThumbnail).mockResolvedValue({
     ok: true,
     blob: thumbnailBlob,
@@ -210,6 +208,8 @@ test("登録すると、URL を発行し、ファイルとサムネイルをア�
   expect(registerPostAction).toHaveBeenCalledWith({
     boardId: "board-1",
     title: "夏祭りのお知らせ",
+    description: "",
+    externalUrl: "",
     publishFrom: new Date(2026, 9, 1, 9, 0).toISOString(),
     expiresAt: new Date(2026, 10, 1, 9, 0).toISOString(),
     originalKey: targets.original.key,
@@ -261,6 +261,44 @@ test("無期限にしたあとに外すと、入れてあった掲示終了で�
       expiresAt: new Date(2026, 10, 1, 9, 0).toISOString(),
     }),
   );
+});
+
+test("説明文と外部リンクを入れると、登録のときに一緒に送る", async () => {
+  render(<PostForm boardId="board-1" />);
+  await selectFile(pdf);
+  await screen.findByAltText("サムネイル");
+  fireEvent.change(screen.getByLabelText("説明文"), {
+    target: { value: "雨天中止です" },
+  });
+  fireEvent.change(screen.getByLabelText("外部リンク"), {
+    target: { value: "https://example.com/form" },
+  });
+  fireEvent.click(screen.getByRole("checkbox", { name: "無期限にする" }));
+  fireEvent.click(screen.getByRole("button", { name: "登録する" }));
+
+  await waitFor(() => expect(push).toHaveBeenCalled());
+  expect(registerPostAction).toHaveBeenCalledWith(
+    expect.objectContaining({
+      description: "雨天中止です",
+      externalUrl: "https://example.com/form",
+    }),
+  );
+});
+
+test("外部リンクが http・https の URL でなければ、アップロードせずに理由を表示する", async () => {
+  render(<PostForm boardId="board-1" />);
+  await selectFile(pdf);
+  await screen.findByAltText("サムネイル");
+  fireEvent.change(screen.getByLabelText("外部リンク"), {
+    target: { value: "javascript:alert(1)" },
+  });
+  fireEvent.click(screen.getByRole("checkbox", { name: "無期限にする" }));
+  fireEvent.click(screen.getByRole("button", { name: "登録する" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "外部リンクは、http:// か https:// で始まる URL を入力してください。",
+  );
+  expect(createUploadUrlsAction).not.toHaveBeenCalled();
 });
 
 test("URL を発行できなければ理由を表示し、アップロードしない", async () => {

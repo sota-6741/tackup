@@ -10,6 +10,8 @@ function randomIp(): string {
 test("公開の経路は、同じ接続元から 1 分に上限を超えて開くと 429 を返す", async ({
   request,
 }) => {
+  // 100 回を超える要求を順に送るので、遅い環境でも終わるよう、時間の上限を延ばす。
+  test.setTimeout(120_000);
   const ip = randomIp();
   const open = (forwardedFor: string) =>
     request.get("/b/no-such-token", {

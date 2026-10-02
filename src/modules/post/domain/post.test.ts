@@ -7,8 +7,11 @@ import {
   encodePostCursor,
   isExpired,
   isPublished,
+  POST_DESCRIPTION_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
   parsePostCursor,
+  parsePostDescription,
+  parsePostExternalUrl,
   parsePostTitle,
   parsePublishPeriod,
 } from "./post";
@@ -174,4 +177,63 @@ test("西暦 9999 年の終わりまでの日時は、続きの位置として�
   );
 
   expect(cursor?.publishFrom.toISOString()).toBe("9999-12-31T23:59:59.999Z");
+});
+
+test("説明文は前後の空白を取り除いて受け入れる。改行は残す", () => {
+  expect(parsePostDescription("  1 行目\n2 行目  ")).toEqual({
+    ok: true,
+    description: "1 行目\n2 行目",
+  });
+});
+
+test.each([
+  ["空文字", ""],
+  ["空白だけ", " \n "],
+])("説明文が %s なら、説明文なし（null）にする", (_, value) => {
+  expect(parsePostDescription(value)).toEqual({ ok: true, description: null });
+});
+
+test("上限を超える長さの説明文は description_too_long になる", () => {
+  const description = "あ".repeat(POST_DESCRIPTION_MAX_LENGTH + 1);
+
+  expect(parsePostDescription(description)).toEqual({
+    ok: false,
+    reason: "description_too_long",
+  });
+  expect(parsePostDescription(description.slice(1)).ok).toBe(true);
+});
+
+test.each([
+  [
+    "https の URL",
+    "https://example.com/form?id=1",
+    "https://example.com/form?id=1",
+  ],
+  ["http の URL", "http://example.com", "http://example.com/"],
+  [
+    "前後に空白のある URL",
+    "  https://example.com/a  ",
+    "https://example.com/a",
+  ],
+])("外部リンクとして %s を受け入れる", (_, value, externalUrl) => {
+  expect(parsePostExternalUrl(value)).toEqual({ ok: true, externalUrl });
+});
+
+test("外部リンクが空なら、外部リンクなし（null）にする", () => {
+  expect(parsePostExternalUrl("  ")).toEqual({ ok: true, externalUrl: null });
+});
+
+test.each([
+  ["javascript: の URL", "javascript:alert(1)"],
+  ["大文字を混ぜた javascript: の URL", "JaVaScRiPt:alert(1)"],
+  ["data: の URL", "data:text/html,<script>alert(1)</script>"],
+  ["mailto: の URL", "mailto:someone@example.com"],
+  ["スキームのない文字列", "example.com/form"],
+  ["パスだけ", "/boards"],
+  ["長すぎる URL", `https://example.com/${"a".repeat(2000)}`],
+])("外部リンクが %s なら external_url_invalid になる", (_, value) => {
+  expect(parsePostExternalUrl(value)).toEqual({
+    ok: false,
+    reason: "external_url_invalid",
+  });
 });

@@ -6,6 +6,8 @@ export type CreatePostData = Pick<
   | "publicId"
   | "boardId"
   | "title"
+  | "description"
+  | "externalUrl"
   | "originalKey"
   | "originalContentType"
   | "originalSize"

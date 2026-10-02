@@ -24,6 +24,8 @@ function setup() {
       publicId: `public-${number}`,
       boardId: "board-1",
       title: `掲示物 ${number}`,
+      description: null,
+      externalUrl: null,
       originalKey: `boards/board-1/posts/${id}/original`,
       originalContentType: "application/pdf",
       originalSize: 1000,

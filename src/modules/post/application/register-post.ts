@@ -18,6 +18,8 @@ import {
   type Post,
   type PostTitleError,
   type PublishPeriodError,
+  parsePostDescription,
+  parsePostExternalUrl,
   parsePostTitle,
   parsePublishPeriod,
 } from "@/modules/post/domain/post";
@@ -47,6 +49,10 @@ export type RegisterPostInput = {
   boardId: string;
   userId: string;
   title: string;
+  /** 空なら、説明文なし。 */
+  description: string;
+  /** 空なら、外部リンクなし。 */
+  externalUrl: string;
   publishFrom: Date;
   expiresAt: Date | null;
   originalKey: string;
@@ -64,6 +70,8 @@ export type RegisterPostResult =
         | "forbidden"
         | PostTitleError
         | PublishPeriodError
+        | "description_too_long"
+        | "external_url_invalid"
         | "file_invalid"
         | "post_limit_exceeded"
         | "storage_limit_exceeded";
@@ -117,6 +125,8 @@ export function makeRegisterPost({
     boardId,
     userId,
     title,
+    description,
+    externalUrl,
     publishFrom,
     expiresAt,
     originalKey,
@@ -129,6 +139,10 @@ export function makeRegisterPost({
 
     const postTitle = parsePostTitle(title);
     if (!postTitle.ok) return postTitle;
+    const postDescription = parsePostDescription(description);
+    if (!postDescription.ok) return postDescription;
+    const postExternalUrl = parsePostExternalUrl(externalUrl);
+    if (!postExternalUrl.ok) return postExternalUrl;
     const period = parsePublishPeriod({ publishFrom, expiresAt });
     if (!period.ok) return period;
 
@@ -203,6 +217,8 @@ export function makeRegisterPost({
             publicId: generatePublicId(),
             boardId,
             title: postTitle.title,
+            description: postDescription.description,
+            externalUrl: postExternalUrl.externalUrl,
             originalKey: keys.originalKey,
             originalContentType: original.contentType,
             originalSize: original.size,
