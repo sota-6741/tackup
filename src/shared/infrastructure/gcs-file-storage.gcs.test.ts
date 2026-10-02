@@ -120,3 +120,67 @@ test("期限が切れた URL ではファイルを取得できない", async () 
 
   expect((await fetch(shortLived)).status).not.toBe(200);
 });
+
+test("先頭のバイトと、保存されている種類・サイズ・世代を読める", async () => {
+  const key = newKey();
+  const uploadUrl = await storage.createUploadUrl({
+    key,
+    contentType: "application/pdf",
+    size: pdf.length,
+  });
+  expect(await upload(uploadUrl, pdf)).toBe(200);
+
+  const head = await storage.readHead({ key, length: 5 });
+
+  expect(head).toMatchObject({
+    bytes: new TextEncoder().encode("%PDF-"),
+    contentType: "application/pdf",
+    size: pdf.length,
+  });
+  expect(await storage.readHead({ key: newKey(), length: 5 })).toBeNull();
+});
+
+test("読んだ世代のままなら移せて、種類も引き継ぐ", async () => {
+  const from = newKey();
+  const to = newKey();
+  const uploadUrl = await storage.createUploadUrl({
+    key: from,
+    contentType: "application/pdf",
+    size: pdf.length,
+  });
+  expect(await upload(uploadUrl, pdf)).toBe(200);
+  const head = await storage.readHead({ key: from, length: 5 });
+  if (!head) throw new Error("アップロードしたファイルを読めない");
+
+  expect(await storage.move({ from, to, generation: head.generation })).toBe(
+    true,
+  );
+
+  expect(await storage.readHead({ key: from, length: 5 })).toBeNull();
+  expect(await storage.readHead({ key: to, length: 5 })).toMatchObject({
+    contentType: "application/pdf",
+    size: pdf.length,
+  });
+  await storage.delete(to);
+});
+
+test("読んだあとに上書きされたファイルは移さない", async () => {
+  const from = newKey();
+  const to = newKey();
+  const uploadUrl = await storage.createUploadUrl({
+    key: from,
+    contentType: "application/pdf",
+    size: pdf.length,
+  });
+  expect(await upload(uploadUrl, pdf)).toBe(200);
+  const head = await storage.readHead({ key: from, length: 5 });
+  if (!head) throw new Error("アップロードしたファイルを読めない");
+  expect(await upload(uploadUrl, pdf)).toBe(200);
+
+  expect(await storage.move({ from, to, generation: head.generation })).toBe(
+    false,
+  );
+
+  expect(await storage.readHead({ key: to, length: 5 })).toBeNull();
+  await storage.delete(from);
+});
