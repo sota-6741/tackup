@@ -1,6 +1,7 @@
 import {
   ClipboardCheckIcon,
   GlobeIcon,
+  ListIcon,
   LockIcon,
   PlusIcon,
 } from "lucide-react";
@@ -44,6 +45,13 @@ export function BoardHeader({
           </Badge>
         )}
         <div className="ml-auto flex flex-wrap gap-2">
+          <Link
+            href={`/boards/${boardId}/posts`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <ListIcon />
+            台帳
+          </Link>
           <Link
             href={`/boards/${boardId}/removals`}
             className={buttonVariants({ variant: "outline" })}

@@ -7,6 +7,7 @@ import {
 import type {
   CreatePostData,
   ExpiredPost,
+  FindByBoardIdInput,
   FindExpiredInput,
   FindPublishedInput,
   MarkRemovedInput,
@@ -60,6 +61,18 @@ export function makeInMemoryPostRepository() {
       .slice(0, limit);
   }
 
+  async function findByBoardId({
+    boardId,
+    limit,
+    after,
+  }: FindByBoardIdInput): Promise<Post[]> {
+    return posts
+      .filter((post) => post.boardId === boardId)
+      .filter((post) => !after || comesBefore(after, post))
+      .sort((a, b) => (comesBefore(a, b) ? -1 : 1))
+      .slice(0, limit);
+  }
+
   async function findExpired({
     boardId,
     now,
@@ -96,6 +109,7 @@ export function makeInMemoryPostRepository() {
     countActiveByBoardId,
     sumFileSizeByBoardId,
     findPublished,
+    findByBoardId,
     findExpired,
     markRemoved,
     findByPublicId,

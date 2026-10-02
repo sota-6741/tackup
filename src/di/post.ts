@@ -9,6 +9,7 @@ import { makeGetPostDetail } from "@/modules/post/application/get-post-detail";
 import { makeGetPostFileUrl } from "@/modules/post/application/get-post-file-url";
 import { makeGetPostQrCode } from "@/modules/post/application/get-post-qr-code";
 import { makeListBoardPosts } from "@/modules/post/application/list-board-posts";
+import { makeListLedgerPosts } from "@/modules/post/application/list-ledger-posts";
 import { makeListPublicBoardPosts } from "@/modules/post/application/list-public-board-posts";
 import { makeListPublishedPosts } from "@/modules/post/application/list-published-posts";
 import { makeListRemovalTasks } from "@/modules/post/application/list-removal-tasks";
@@ -73,6 +74,13 @@ export const listBoardPosts = makeListBoardPosts({
 export const listPublicBoardPosts = makeListPublicBoardPosts({
   boardRepository: makeDrizzleBoardRepository(db),
   listPublishedPosts,
+});
+
+export const listLedgerPosts = makeListLedgerPosts({
+  checkBoardAccess,
+  postRepository,
+  fileStorage,
+  now: () => new Date(),
 });
 
 export const listRemovalTasks = makeListRemovalTasks({

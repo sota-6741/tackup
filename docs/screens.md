@@ -56,6 +56,7 @@
 | S4 | 掲示物登録（ステップ3では仮の画面） | `/boards/{boardId}/posts/new` | 画面 |
 | S1 | 掲示物詳細 | `/posts/{publicId}` | 画面 |
 | S3 | 撤去タスク | `/boards/{boardId}/removals` | 画面 |
+| S8 | 台帳 | `/boards/{boardId}/posts` | 画面 |
 | — | 404 | 該当なし | 画面 |
 
 ---
@@ -256,7 +257,7 @@ src/app/boards/new/page.tsx                  [Server] 見出しと CreateBoardFo
 
 | 導線 | 表示条件 | 追加するステップ |
 | -- | -- | -- |
-| 掲示物登録・撤去タスク・台帳 | メンバー | 4・7・8（掲示物登録と撤去タスクは追加済み） |
+| 掲示物登録・撤去タスク・台帳 | メンバー | 4・7・8（追加済み） |
 | 招待リンクの表示・コピー | 公開掲示板 | 9 |
 | 招待リンクの再発行・掲示板設定・メンバー管理 | admin | 9 |
 
@@ -456,6 +457,49 @@ src/app/boards/[boardId]/removals/page.tsx   [Server] getBoard・listRemovalTask
 └ RemovalTaskList                            modules/post/presentation
   ├ LocalDateTime                            [Client]
   └ RemovePostButton                         [Client] 確認のダイアログ。removePostAction
+```
+
+---
+
+## S8 台帳 `/boards/{boardId}/posts`
+
+要件 16・38.6。その掲示板のすべての掲示物を、状態を付けて並べる管理用の一覧。メンバー向けレイアウト（サイドバー）の中に表示する。設計は [design/post-ledger.md](design/post-ledger.md)。
+
+```
+┌───────────────────────────────────────────┐
+│ 中野のボード                                │
+│ 台帳                                       │
+│ この掲示板のすべての掲示物です。…             │
+│ ┌───────────────────────────────────────┐ │
+│ │ ▢ 来年の夏祭り [掲示開始前]   [撤去済みにする] │ │
+│ │   掲示期間: 2099年7月1日 0:00 〜 …       │ │
+│ ├───────────────────────────────────────┤ │
+│ │ ▢ ゴミの出し方 [撤去済み]                 │ │
+│ │   掲示期間: … 〜 無期限                  │ │
+│ │   撤去: 2026年10月3日 7:30               │ │
+│ └───────────────────────────────────────┘ │
+│              [続きを見る]                  │
+└───────────────────────────────────────────┘
+```
+
+| 項目 | 内容 |
+| -- | -- |
+| データ | `getBoard({ boardId, userId })` と `listLedgerPosts({ boardId, userId, cursor })` |
+| 開ける人 | その掲示板のメンバー（admin・poster）。メンバーでなければ 404 |
+| 表示する掲示物 | 状態を問わず、その掲示板のすべての掲示物 |
+| 並び順 | 掲示開始の新しい順（同じなら ID の大きい順） |
+| 見出し | 掲示板名（掲示板ボードへのリンク）と「台帳」（`h1`） |
+| 各行 | サムネイル、タイトル（掲示物詳細へのリンク。先読みはしない）、状態のバッジ、掲示期間（無期限なら「無期限」）、撤去済みなら撤去した日時 |
+| 状態のバッジ | 下書き・掲示開始前・公開中・期限切れ・撤去待ち・撤去済み。domain の `postDisplayState` で、状態と日時から決める。期限切れ・撤去待ちだけ目立つ色にする |
+| 撤去済みにする | 状態が `published` の行（掲示開始前・公開中・期限切れ）に出す。撤去タスクと同じ確認のダイアログ（`RemovePostButton`）。撤去済みにすると、行の状態が撤去済みに変わる |
+| 1 件もないとき | 「まだ掲示物はありません」 |
+| ページ分け | 1 ページ 50 件。掲示板ボードと同じ（`?after={続きの位置}`） |
+
+```
+src/app/boards/[boardId]/posts/page.tsx   [Server] getBoard・listLedgerPosts。失敗なら 404
+└ PostLedger                              modules/post/presentation
+  ├ LocalDateTime                         [Client]
+  └ RemovePostButton                      [Client] 確認のダイアログ。removePostAction
 ```
 
 ---

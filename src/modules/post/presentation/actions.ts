@@ -167,6 +167,7 @@ export async function removePostAction(
   }
 
   revalidatePath(`/boards/${result.boardId}/removals`);
+  revalidatePath(`/boards/${result.boardId}/posts`);
   revalidatePath(`/boards/${result.boardId}`);
   revalidatePath(`/posts/${publicId}`);
   return { ok: true };

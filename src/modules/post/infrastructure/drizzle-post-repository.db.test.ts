@@ -433,3 +433,48 @@ test("同時に撤去済みにしても、書き換えるのは 1 回だけ", as
 
   expect(results.filter(Boolean)).toHaveLength(1);
 });
+
+test("台帳には、状態を問わずその掲示板のすべての掲示物を、掲示開始の新しい順に返し、続きを重複も抜けもなく取れる", async () => {
+  const board = await createBoard();
+  const other = await createBoard();
+  await repository.create(postData(other.id));
+  const created = [];
+  for (const {
+    name,
+    status,
+    publishFrom,
+    expiresAt,
+  } of PUBLISH_STATE_EXAMPLES) {
+    created.push(
+      await repository.create(
+        postData(board.id, { title: name, status, publishFrom, expiresAt }),
+      ),
+    );
+  }
+  const expected = [...created]
+    .sort((a, b) =>
+      a.publishFrom.getTime() === b.publishFrom.getTime()
+        ? b.id.localeCompare(a.id)
+        : b.publishFrom.getTime() - a.publishFrom.getTime(),
+    )
+    .map((post) => post.id);
+
+  const found = [];
+  let after: { publishFrom: Date; id: string } | undefined;
+  for (;;) {
+    const page = await repository.findByBoardId({
+      boardId: board.id,
+      limit: 3,
+      after,
+    });
+    found.push(...page);
+    const last = page.at(-1);
+    if (page.length < 3 || !last) break;
+    after = { publishFrom: last.publishFrom, id: last.id };
+  }
+
+  expect(found.map((post) => post.id)).toEqual(expected);
+  expect(new Set(found.map((post) => post.status))).toEqual(
+    new Set(["published", "removed", "draft"]),
+  );
+});
