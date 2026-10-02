@@ -1,0 +1,2 @@
+ALTER TABLE "post" ADD CONSTRAINT "post_original_size_positive" CHECK ("post"."original_size" > 0);--> statement-breakpoint
+ALTER TABLE "post" ADD CONSTRAINT "post_thumbnail_size_positive" CHECK ("post"."thumbnail_size" > 0);

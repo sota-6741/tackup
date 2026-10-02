@@ -63,6 +63,17 @@ test("掲示終了が掲示開始より後でない掲示物は登録できな�
   await expect(repository.create(data)).rejects.toBeInstanceOf(DatabaseError);
 });
 
+test.each([
+  ["原本", { originalSize: 0 }],
+  ["サムネイル", { thumbnailSize: -1 }],
+])("%sのサイズが正の数でない掲示物は登録できない", async (_, overrides) => {
+  const board = await createBoard();
+
+  await expect(
+    repository.create(postData(board.id, overrides)),
+  ).rejects.toBeInstanceOf(DatabaseError);
+});
+
 test("同じ publicId の掲示物は登録できない", async () => {
   const board = await createBoard();
   await repository.create(postData(board.id, { publicId: "same" }));

@@ -55,5 +55,7 @@ export const post = pgTable(
       "post_expires_after_publish",
       sql`${table.expiresAt} > ${table.publishFrom}`,
     ),
+    check("post_original_size_positive", sql`${table.originalSize} > 0`),
+    check("post_thumbnail_size_positive", sql`${table.thumbnailSize} > 0`),
   ],
 );
