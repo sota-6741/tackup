@@ -53,6 +53,37 @@ function titleFromFileName(name: string): string {
   return name.replace(/\.[^.]+$/, "").slice(0, POST_TITLE_MAX_LENGTH);
 }
 
+/** サーバーでも同じ決まりを確かめる。ここで先に確かめるのは、登録できない入力のためにアップロードしないため。 */
+function parsePostInput({
+  title,
+  publishFrom,
+  expiresAt,
+}: {
+  title: string;
+  publishFrom: string;
+  expiresAt: string;
+}):
+  | { ok: true; publishFromIso: string; expiresAtIso: string }
+  | { ok: false; message: string } {
+  const postTitle = parsePostTitle(title);
+  if (!postTitle.ok) {
+    return { ok: false, message: POST_INPUT_ERROR_MESSAGES[postTitle.reason] };
+  }
+  const publishFromIso = datetimeLocalToIso(publishFrom);
+  const expiresAtIso = datetimeLocalToIso(expiresAt);
+  if (!publishFromIso || !expiresAtIso) {
+    return { ok: false, message: POST_INPUT_ERROR_MESSAGES.period_invalid };
+  }
+  const period = parsePublishPeriod({
+    publishFrom: new Date(publishFromIso),
+    expiresAt: new Date(expiresAtIso),
+  });
+  if (!period.ok) {
+    return { ok: false, message: POST_INPUT_ERROR_MESSAGES[period.reason] };
+  }
+  return { ok: true, publishFromIso, expiresAtIso };
+}
+
 export function PostForm({ boardId }: { boardId: string }) {
   const [original, setOriginal] = useState<Original>({ status: "idle" });
   const [title, setTitle] = useState("");
@@ -120,31 +151,14 @@ export function PostForm({ boardId }: { boardId: string }) {
   async function submit({
     file,
     thumbnail,
+    publishFromIso,
+    expiresAtIso,
   }: {
     file: File;
     thumbnail: Thumbnail;
+    publishFromIso: string;
+    expiresAtIso: string;
   }) {
-    // サーバーでも同じ決まりを確かめる。ここで先に確かめるのは、登録できない入力のためにアップロードしないため。
-    const postTitle = parsePostTitle(title);
-    if (!postTitle.ok) {
-      setError(POST_INPUT_ERROR_MESSAGES[postTitle.reason]);
-      return;
-    }
-    const publishFromIso = datetimeLocalToIso(publishFrom);
-    const expiresAtIso = datetimeLocalToIso(expiresAt);
-    if (!publishFromIso || !expiresAtIso) {
-      setError(POST_INPUT_ERROR_MESSAGES.period_invalid);
-      return;
-    }
-    const period = parsePublishPeriod({
-      publishFrom: new Date(publishFromIso),
-      expiresAt: new Date(expiresAtIso),
-    });
-    if (!period.ok) {
-      setError(POST_INPUT_ERROR_MESSAGES[period.reason]);
-      return;
-    }
-
     const urls = await createUploadUrlsAction({
       boardId,
       original: { contentType: file.type, size: file.size },
@@ -190,8 +204,17 @@ export function PostForm({ boardId }: { boardId: string }) {
       setError("原本のファイルを選んでください。");
       return;
     }
+    const period = parsePostInput({ title, publishFrom, expiresAt });
+    if (!period.ok) {
+      setError(period.message);
+      return;
+    }
     setError(null);
-    startTransition(() => submit(original));
+    const { file, thumbnail } = original;
+    const { publishFromIso, expiresAtIso } = period;
+    startTransition(() =>
+      submit({ file, thumbnail, publishFromIso, expiresAtIso }),
+    );
   }
 
   const busy = pending || original.status === "generating";
