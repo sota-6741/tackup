@@ -715,8 +715,13 @@ boardId
 title
 description
 externalUrl
-pdfKey
+originalKey
+originalContentType
+originalSize
 thumbnailKey
+thumbnailSize
+thumbnailWidth
+thumbnailHeight
 publishFrom
 expiresAt
 status
@@ -725,6 +730,10 @@ removedBy
 createdAt
 updatedAt
 ```
+
+原本は PDF とは限らないので、キーは `originalKey` とし、形式（`originalContentType`）も持つ。ファイルのサイズは、掲示板ごとの容量の上限（「34.2 利用量の上限」）を DB だけで確かめるために持つ。サムネイルの幅と高さは、masonry で縦横比を先に決めるために持つ。
+
+`expiresAt` が `publishFrom` より後であることは、DB の制約でも守る。掲示物のある掲示板は消せないよう、`boardId` の外部キーは削除を拒否する。
 
 実際の型、nullable、リレーション等は実装に応じて定義する。
 

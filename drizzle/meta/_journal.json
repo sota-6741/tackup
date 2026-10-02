@@ -29,6 +29,13 @@
       "when": 1789751226388,
       "tag": "0003_clear_oauth_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790912224547,
+      "tag": "0004_complex_stingray",
+      "breakpoints": true
     }
   ]
 }
