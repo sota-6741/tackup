@@ -26,7 +26,8 @@ import { post } from "./schema";
  */
 function publishedAt(now: Date) {
   return and(
-    eq(post.status, "published"),
+    // 索引（post_published_idx）は status = 'published' の行だけを持つ。値をパラメーターで渡すと、実行計画によっては索引が使われないので、SQL に直接書く。
+    sql`${post.status} = 'published'`,
     lte(post.publishFrom, now),
     or(isNull(post.expiresAt), gt(post.expiresAt, now)),
   );
