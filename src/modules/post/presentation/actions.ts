@@ -17,6 +17,8 @@ const MAX_SIZE_MB = ORIGINAL_FILE_MAX_SIZE / 1024 / 1024;
 const UNEXPECTED_INPUT =
   "登録できませんでした。画面を読み込み直して、もう一度お試しください。";
 const FORBIDDEN = "この掲示板に掲示物を登録できません。";
+const POST_LIMIT_EXCEEDED =
+  "この掲示板に登録できる掲示物の数の上限に達しています。";
 const STORAGE_LIMIT_EXCEEDED =
   "この掲示板で保存できるファイルの容量の上限に達しています。";
 
@@ -42,6 +44,7 @@ const CREATE_UPLOAD_URLS_ERROR_MESSAGES: Record<
   size_invalid: "空のファイルは選べません。",
   file_too_large: `${MAX_SIZE_MB}MB 以下のファイルを選んでください。`,
   thumbnail_invalid: UNEXPECTED_INPUT,
+  post_limit_exceeded: POST_LIMIT_EXCEEDED,
   storage_limit_exceeded: STORAGE_LIMIT_EXCEEDED,
 };
 
@@ -93,7 +96,7 @@ const REGISTER_POST_ERROR_MESSAGES: Record<
   ...POST_INPUT_ERROR_MESSAGES,
   file_invalid:
     "ファイルを確認できませんでした。ファイルを選び直して、もう一度お試しください。",
-  post_limit_exceeded: "この掲示板に登録できる掲示物の数の上限に達しています。",
+  post_limit_exceeded: POST_LIMIT_EXCEEDED,
   storage_limit_exceeded: STORAGE_LIMIT_EXCEEDED,
 };
 

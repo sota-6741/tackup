@@ -2,7 +2,11 @@ import { expect, test } from "vitest";
 import { makeCheckBoardAccess } from "@/modules/board/application/check-board-access";
 import type { Role } from "@/modules/board/domain/board-member";
 import { makeInMemoryBoardRepository } from "@/modules/board/testing/in-memory-board-repository";
-import { BOARD_FILE_MAX_TOTAL_SIZE } from "@/modules/post/domain/post";
+import {
+  BOARD_FILE_MAX_TOTAL_SIZE,
+  BOARD_POST_MAX_COUNT,
+  type PostStatus,
+} from "@/modules/post/domain/post";
 import { makeInMemoryPostRepository } from "@/modules/post/testing/in-memory-post-repository";
 import type { CreateUploadUrlInput } from "@/shared/domain/file-storage";
 import { makeInMemoryFileStorage } from "@/shared/testing/in-memory-file-storage";
@@ -46,10 +50,18 @@ async function setup() {
     });
   }
 
-  async function addPost({ originalSize }: { originalSize: number }) {
+  let posts = 0;
+  async function addPost({
+    originalSize = 1,
+    status = "removed",
+  }: {
+    originalSize?: number;
+    status?: PostStatus;
+  } = {}) {
+    posts += 1;
     await postRepository.create({
-      id: "post-1",
-      publicId: "public-1",
+      id: `post-${posts}`,
+      publicId: `public-${posts}`,
       boardId: board.id,
       title: "既存の掲示物",
       originalKey: `boards/${board.id}/posts/post-1/original`,
@@ -61,7 +73,7 @@ async function setup() {
       thumbnailHeight: 800,
       publishFrom: new Date("2026-10-01T00:00:00Z"),
       expiresAt: new Date("2026-11-01T00:00:00Z"),
-      status: "removed",
+      status,
     });
   }
 
@@ -193,5 +205,24 @@ test("掲示板のファイルの合計が上限を超えるなら storage_limit
   });
 
   expect(result).toEqual({ ok: false, reason: "storage_limit_exceeded" });
+  expect(uploadUrlRequests).toEqual([]);
+});
+
+test("掲示物の数が上限に達していると post_limit_exceeded になり、URL を発行しない", async () => {
+  const { createUploadUrls, uploadUrlRequests, board, addMember, addPost } =
+    await setup();
+  addMember("poster");
+  for (let i = 0; i < BOARD_POST_MAX_COUNT; i++) {
+    await addPost({ status: "published" });
+  }
+
+  const result = await createUploadUrls({
+    boardId: board.id,
+    userId: "user-1",
+    original,
+    thumbnail,
+  });
+
+  expect(result).toEqual({ ok: false, reason: "post_limit_exceeded" });
   expect(uploadUrlRequests).toEqual([]);
 });

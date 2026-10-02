@@ -7,7 +7,10 @@ import {
   type OriginalFileError,
   parseOriginalFile,
 } from "@/modules/post/domain/original-file";
-import { BOARD_FILE_MAX_TOTAL_SIZE } from "@/modules/post/domain/post";
+import {
+  BOARD_FILE_MAX_TOTAL_SIZE,
+  BOARD_POST_MAX_COUNT,
+} from "@/modules/post/domain/post";
 import type { PostRepository } from "@/modules/post/domain/post-repository";
 import { parseThumbnailFile } from "@/modules/post/domain/thumbnail";
 import type { FileStorage } from "@/shared/domain/file-storage";
@@ -45,10 +48,11 @@ export type CreateUploadUrlsResult =
         | "forbidden"
         | OriginalFileError
         | "thumbnail_invalid"
+        | "post_limit_exceeded"
         | "storage_limit_exceeded";
     };
 
-/** 容量はここではロックせずに確かめる。無駄なアップロードを早く止めるためで、上限を守るのは掲示物の登録（`registerPost`）。 */
+/** 掲示物の数と容量は、ここではロックせずに確かめる。無駄なアップロードを早く止めるためで、上限を守るのは掲示物の登録（`registerPost`）。 */
 export function makeCreateUploadUrls({
   checkBoardAccess,
   fileStorage,
@@ -87,6 +91,10 @@ export function makeCreateUploadUrls({
     const thumbnailFile = parseThumbnailFile(thumbnail);
     if (!thumbnailFile.ok) return thumbnailFile;
 
+    const count = await postRepository.countActiveByBoardId(boardId);
+    if (count >= BOARD_POST_MAX_COUNT) {
+      return { ok: false, reason: "post_limit_exceeded" };
+    }
     const used = await postRepository.sumFileSizeByBoardId(boardId);
     if (
       used + originalFile.size + thumbnailFile.size >
