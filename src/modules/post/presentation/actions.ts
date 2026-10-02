@@ -11,6 +11,8 @@ import type {
 } from "@/modules/post/application/create-upload-urls";
 import type { RegisterPostResult } from "@/modules/post/application/register-post";
 import { ORIGINAL_FILE_MAX_SIZE } from "@/modules/post/domain/original-file";
+import type { RateLimited } from "@/shared/domain/rate-limiter";
+import { RATE_LIMITED_MESSAGE } from "@/shared/presentation/lib/messages";
 import { POST_INPUT_ERROR_MESSAGES } from "./post-messages";
 
 const MAX_SIZE_MB = ORIGINAL_FILE_MAX_SIZE / 1024 / 1024;
@@ -35,9 +37,10 @@ export type CreateUploadUrlsActionResult =
   | { ok: false; error: string };
 
 const CREATE_UPLOAD_URLS_ERROR_MESSAGES: Record<
-  Extract<CreateUploadUrlsResult, { ok: false }>["reason"],
+  Extract<CreateUploadUrlsResult | RateLimited, { ok: false }>["reason"],
   string
 > = {
+  rate_limited: RATE_LIMITED_MESSAGE,
   board_not_found: FORBIDDEN,
   forbidden: FORBIDDEN,
   content_type_not_allowed: "PDF・JPEG・PNG・WebP のファイルを選んでください。",
@@ -88,9 +91,10 @@ export type RegisterPostActionResult =
   | { ok: false; error: string };
 
 const REGISTER_POST_ERROR_MESSAGES: Record<
-  Extract<RegisterPostResult, { ok: false }>["reason"],
+  Extract<RegisterPostResult | RateLimited, { ok: false }>["reason"],
   string
 > = {
+  rate_limited: RATE_LIMITED_MESSAGE,
   board_not_found: FORBIDDEN,
   forbidden: FORBIDDEN,
   ...POST_INPUT_ERROR_MESSAGES,
