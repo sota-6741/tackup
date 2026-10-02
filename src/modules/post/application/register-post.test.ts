@@ -351,3 +351,20 @@ test("Post の登録が想定外に失敗したら、移したファイルを消
   await expect(registerPost(input)).rejects.toBe(failure);
   expect(files.size).toBe(0);
 });
+
+test("サムネイルの移動が想定外に失敗したら、移した原本を消してから投げ直す", async () => {
+  const { make, input, files, fileStorage, finalKeys } = await setup();
+  const failure = new Error("ストレージが止まっている");
+  const registerPost = make({
+    fileStorage: {
+      ...fileStorage,
+      async move(request) {
+        if (request.from === input.thumbnailKey) throw failure;
+        return fileStorage.move(request);
+      },
+    },
+  });
+
+  await expect(registerPost(input)).rejects.toBe(failure);
+  expect(files.has(finalKeys.originalKey)).toBe(false);
+});

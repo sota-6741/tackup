@@ -159,28 +159,28 @@ export function makeRegisterPost({
 
     const postId = generatePostId();
     const keys = postFileKeys({ boardId, postId });
-    const movedKeys: string[] = [];
-    for (const { from, to, generation } of [
-      {
-        from: originalKey,
-        to: keys.originalKey,
-        generation: original.generation,
-      },
-      {
-        from: thumbnailKey,
-        to: keys.thumbnailKey,
-        generation: thumbnail.generation,
-      },
-    ]) {
-      const moved = await fileStorage.move({ from, to, generation });
-      if (!moved) {
-        await deleteAll([...pendingKeys, ...movedKeys]);
-        return { ok: false, reason: "file_invalid" };
-      }
-      movedKeys.push(to);
-    }
-
+    // 途中で失敗したら、正式な場所に置いたファイルを消す。Post から参照されないファイルを残さないため。
+    const finalKeys = [keys.originalKey, keys.thumbnailKey];
     try {
+      for (const { from, to, generation } of [
+        {
+          from: originalKey,
+          to: keys.originalKey,
+          generation: original.generation,
+        },
+        {
+          from: thumbnailKey,
+          to: keys.thumbnailKey,
+          generation: thumbnail.generation,
+        },
+      ]) {
+        const moved = await fileStorage.move({ from, to, generation });
+        if (!moved) {
+          await deleteAll([...pendingKeys, ...finalKeys]);
+          return { ok: false, reason: "file_invalid" };
+        }
+      }
+
       const result = await unitOfWork.run<RegisterPostResult>(
         async ({ boardRepository, postRepository }) => {
           const board = await boardRepository.lockById(boardId);
@@ -217,11 +217,10 @@ export function makeRegisterPost({
           return { ok: true, post };
         },
       );
-      if (!result.ok) await deleteAll(movedKeys);
+      if (!result.ok) await deleteAll(finalKeys);
       return result;
     } catch (error) {
-      // Post を作れなかったファイルが、正式な場所に残らないようにする。
-      await deleteAll(movedKeys).catch(() => {});
+      await deleteAll(finalKeys).catch(() => {});
       throw error;
     }
   };
