@@ -48,7 +48,16 @@ jobs:
       - run: bun run test:storage
       - run: bun run db:migrate
       - run: bun run build
-      - run: bunx playwright install --with-deps chromium
+      # ブラウザは Playwright のバージョンごとにキャッシュする。
+      # --with-deps は付けない。毎回 apt で OS のパッケージを入れ、Ubuntu のミラーが遅いと 8 分以上かかることがある。
+      # ubuntu-latest のランナーには Google Chrome とその依存のライブラリが入っているので、Chromium はそのまま動く。
+      - id: playwright
+        run: echo "version=$(bunx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - run: bunx playwright install chromium
       - run: bun run test:browser
       # e2e は掲示物の登録でエミュレーターへアップロードするので、アプリ用のバケットと署名用の鍵を用意する
       - run: bun run storage:setup
