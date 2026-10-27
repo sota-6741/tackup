@@ -59,6 +59,7 @@
 | S8 | 掲示物一覧 | `/boards/{boardId}/posts` | 画面 |
 | S8 | 掲示物の編集 | `/boards/{boardId}/posts/{publicId}/edit` | 画面 |
 | — | 404 | 該当なし | 画面 |
+| — | エラー | 想定外の障害が起きたとき | 画面。`/boards` の下は `boards/error.tsx`（サイドバーは残る）、それ以外は `error.tsx`、ルートのレイアウトが失敗したときは `global-error.tsx`。どれも「問題が発生しました」と「もう一度試す」を出す（`ErrorMessage`）。原本・QR コードの Route Handler は画面を返さず、500 にする |
 
 ---
 
