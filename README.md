@@ -5,6 +5,7 @@ Next.js のテンプレートです。
 | 分類                     | 技術                                                            |
 | ------------------------ | --------------------------------------------------------------- |
 | フレームワーク           | Next.js 16 (App Router, React Compiler) / React 19 / TypeScript |
+| 実行環境                 | Node.js 24（LTS。`.node-version`）                              |
 | パッケージマネージャー   | bun                                                             |
 | UI                       | Tailwind CSS v4 / shadcn/ui (base-nova)                         |
 | DB                       | PostgreSQL 18 / Drizzle ORM                                     |
