@@ -216,9 +216,7 @@ const UPDATE_POST_ERROR_MESSAGES: Record<
   ...POST_INPUT_ERROR_MESSAGES,
 };
 
-export async function updatePostAction(
-  input: unknown,
-): Promise<ActionResult<{ boardId: string }>> {
+export async function updatePostAction(input: unknown): Promise<ActionResult> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
@@ -242,5 +240,5 @@ export async function updatePostAction(
   }
 
   revalidatePostPages({ boardId: result.boardId, publicId });
-  return { ok: true, boardId: result.boardId };
+  return { ok: true };
 }

@@ -50,10 +50,7 @@ test("無期限の掲示物は、無期限にするにチェックを入れて�
 });
 
 test("保存すると、入力した値を送り、掲示物一覧へ移動する", async () => {
-  vi.mocked(updatePostAction).mockResolvedValue({
-    ok: true,
-    boardId: "board-1",
-  });
+  vi.mocked(updatePostAction).mockResolvedValue({ ok: true });
   renderForm();
   await waitFor(() =>
     expect(screen.getByLabelText(/掲示開始/)).not.toHaveValue(""),

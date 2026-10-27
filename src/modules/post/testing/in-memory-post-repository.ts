@@ -101,10 +101,24 @@ export function makeInMemoryPostRepository() {
     return true;
   }
 
-  async function update({ id, ...data }: UpdatePostData): Promise<boolean> {
+  async function update({
+    id,
+    title,
+    description,
+    externalUrl,
+    publishFrom,
+    expiresAt,
+  }: UpdatePostData): Promise<boolean> {
     const post = posts.find((item) => item.id === id);
     if (!post || post.status === "removed") return false;
-    Object.assign(post, data, { updatedAt: new Date() });
+    Object.assign(post, {
+      title,
+      description,
+      externalUrl,
+      publishFrom,
+      expiresAt,
+      updatedAt: new Date(),
+    });
     return true;
   }
 

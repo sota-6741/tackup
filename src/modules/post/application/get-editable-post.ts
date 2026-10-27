@@ -36,13 +36,10 @@ export type EditablePostView = {
   thumbnailHeight: number;
 };
 
-/**
- * `post_not_found` は、掲示物がない・ほかの掲示板の掲示物・メンバーでない、のどれか。掲示物があるかどうかを知らせないため、区別しない。
- * `post_not_editable` は、撤去済みのとき。
- */
+/** `post_not_found` は、掲示物がない・ほかの掲示板の掲示物・メンバーでない・撤去済み、のどれか。画面はどれも 404 にするので区別しない。 */
 export type GetEditablePostResult =
   | { ok: true; post: EditablePostView }
-  | { ok: false; reason: "post_not_found" | "post_not_editable" };
+  | { ok: false; reason: "post_not_found" };
 
 /** 編集の画面に出す、今の値。URL の掲示板と掲示物が食い違っていれば、見つからないとして扱う。 */
 export function makeGetEditablePost({
@@ -61,7 +58,7 @@ export function makeGetEditablePost({
     }
     const access = await checkBoardAccess({ boardId, userId, roles: ROLES });
     if (!access.ok) return { ok: false, reason: "post_not_found" };
-    if (!isEditable(post)) return { ok: false, reason: "post_not_editable" };
+    if (!isEditable(post)) return { ok: false, reason: "post_not_found" };
 
     return {
       ok: true,

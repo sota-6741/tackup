@@ -6,7 +6,6 @@ import { Button } from "@/shared/presentation/components/ui/button";
 import { updatePostAction } from "./actions";
 import { toDatetimeLocalValue } from "./datetime-local";
 import {
-  EMPTY_POST_FIELD_VALUES,
   PostFields,
   type PostFieldValues,
   parsePostFields,
@@ -34,11 +33,12 @@ export function EditPostForm({
   expiresAt,
 }: EditPostFormProps) {
   const [fields, setFields] = useState<PostFieldValues>({
-    ...EMPTY_POST_FIELD_VALUES,
     title,
+    publishFrom: "",
+    expiresAt: "",
+    unlimited: expiresAt === null,
     description: description ?? "",
     externalUrl: externalUrl ?? "",
-    unlimited: expiresAt === null,
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

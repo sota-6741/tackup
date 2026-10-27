@@ -16,7 +16,6 @@ export default async function EditPostPage({
     publicId,
     userId: session.user.id,
   });
-  // 撤去済みは編集の導線を出さないので、ここに来るのは URL を直接開いたときだけ。見つからないときと同じにする。
   if (!result.ok) notFound();
   const { post } = result;
 

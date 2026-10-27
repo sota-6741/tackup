@@ -122,7 +122,7 @@ test("撤去済みの掲示物は編集できない", async () => {
       publicId: "public-1",
       userId: "member",
     }),
-  ).toEqual({ ok: false, reason: "post_not_editable" });
+  ).toEqual({ ok: false, reason: "post_not_found" });
   expect(post.title).toBe("夏祭りのお知らせ");
 });
 
