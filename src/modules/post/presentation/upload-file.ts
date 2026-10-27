@@ -1,6 +1,9 @@
 import "client-only";
 import type { UploadTarget } from "@/modules/post/application/create-upload-urls";
 
+export const UPLOAD_FAILED_MESSAGE =
+  "アップロードできませんでした。通信の状態を確かめて、もう一度お試しください。";
+
 /** 署名付きの URL へ直接 PUT する。ヘッダーは署名に含まれているので、渡されたものをそのまま付ける。通信できない・拒否されたときは `false`。 */
 export async function uploadFile({
   target,

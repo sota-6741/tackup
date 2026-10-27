@@ -25,15 +25,22 @@ export function isUploadKeyOf({
   return key.startsWith(prefix) && UUID_PATTERN.test(key.slice(prefix.length));
 }
 
-/** 確認を通ったファイルを置く、正式な場所のキー。 */
+/**
+ * 確認を通ったファイルを置く、正式な場所のキー。
+ * 原本を差し替えるときは `revision` を渡して、今のファイルと別のキーにする。移すのに失敗しても、今のファイルが残る。
+ */
 export function postFileKeys({
   boardId,
   postId,
+  revision,
 }: {
   boardId: string;
   postId: string;
+  revision?: string;
 }): { originalKey: string; thumbnailKey: string } {
-  const prefix = `boards/${boardId}/posts/${postId}/`;
+  const prefix = revision
+    ? `boards/${boardId}/posts/${postId}/${revision}/`
+    : `boards/${boardId}/posts/${postId}/`;
   return {
     originalKey: `${prefix}original`,
     thumbnailKey: `${prefix}thumbnail`,

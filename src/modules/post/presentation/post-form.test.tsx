@@ -13,7 +13,10 @@ vi.mock("./actions", () => ({
   registerPostAction: vi.fn(),
 }));
 vi.mock("./create-thumbnail", () => ({ createThumbnail: vi.fn() }));
-vi.mock("./upload-file", () => ({ uploadFile: vi.fn() }));
+vi.mock("./upload-file", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./upload-file")>()),
+  uploadFile: vi.fn(),
+}));
 
 const pdf = new File(["%PDF-1.7"], "夏祭りのお知らせ.pdf", {
   type: "application/pdf",

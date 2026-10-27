@@ -52,6 +52,11 @@ export interface PostRepository {
    * 書き換えたら `true`。撤去済み（編集の画面を開いたあとに、ほかの人が撤去済みにしたなど）なら何もせずに `false`。
    */
   update(data: UpdatePostData): Promise<boolean>;
+  /**
+   * 原本とサムネイルを、新しいキーのファイルに書き換える。
+   * 書き換えたら `true`。撤去済みなら何もせずに `false`。
+   */
+  replaceFiles(data: ReplaceFilesData): Promise<boolean>;
   /** 公開の URL に使う ID から探す。公開中かどうかは見ない。 */
   findByPublicId(publicId: string): Promise<Post | null>;
 }
@@ -88,4 +93,16 @@ export type FindByBoardIdInput = {
 export type UpdatePostData = Pick<
   Post,
   "id" | "title" | "description" | "externalUrl" | "publishFrom" | "expiresAt"
+>;
+
+export type ReplaceFilesData = Pick<
+  Post,
+  | "id"
+  | "originalKey"
+  | "originalContentType"
+  | "originalSize"
+  | "thumbnailKey"
+  | "thumbnailSize"
+  | "thumbnailWidth"
+  | "thumbnailHeight"
 >;

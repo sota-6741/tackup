@@ -5,10 +5,6 @@ import type {
 import { ROLES } from "@/modules/board/domain/board-member";
 import type { BoardRepository } from "@/modules/board/domain/board-repository";
 import {
-  detectContentType,
-  FILE_SIGNATURE_LENGTH,
-} from "@/modules/post/domain/file-signature";
-import {
   type OriginalContentType,
   parseOriginalFile,
 } from "@/modules/post/domain/original-file";
@@ -31,6 +27,7 @@ import {
 import { isUploadKeyOf, postFileKeys } from "@/modules/post/domain/upload-key";
 import type { FileStorage } from "@/shared/domain/file-storage";
 import type { UnitOfWork } from "@/shared/domain/unit-of-work";
+import { verifyUploadedFile } from "./verify-uploaded-file";
 
 type Deps = {
   checkBoardAccess: (
@@ -77,12 +74,6 @@ export type RegisterPostResult =
         | "storage_limit_exceeded";
     };
 
-type VerifiedFile<TContentType> = {
-  contentType: TContentType;
-  size: number;
-  generation: string;
-};
-
 export function makeRegisterPost({
   checkBoardAccess,
   fileStorage,
@@ -90,33 +81,6 @@ export function makeRegisterPost({
   generatePostId,
   generatePublicId,
 }: Deps) {
-  /** 申告された種類は中身を保証しないので、先頭のバイトから見分けた形式が、保存されている種類と同じであることを確かめる。 */
-  async function verify<TContentType extends string>({
-    key,
-    parse,
-  }: {
-    key: string;
-    parse: (file: {
-      contentType: string;
-      size: number;
-    }) => { ok: true; contentType: TContentType; size: number } | { ok: false };
-  }): Promise<VerifiedFile<TContentType> | null> {
-    const head = await fileStorage.readHead({
-      key,
-      length: FILE_SIGNATURE_LENGTH,
-    });
-    if (!head) return null;
-    if (detectContentType(head.bytes) !== head.contentType) return null;
-
-    const file = parse({ contentType: head.contentType, size: head.size });
-    if (!file.ok) return null;
-    return {
-      contentType: file.contentType,
-      size: file.size,
-      generation: head.generation,
-    };
-  }
-
   async function deleteAll(keys: string[]): Promise<void> {
     await Promise.all(keys.map((key) => fileStorage.delete(key)));
   }
@@ -160,11 +124,16 @@ export function makeRegisterPost({
     }
 
     const [original, thumbnail] = await Promise.all([
-      verify<OriginalContentType>({
+      verifyUploadedFile<OriginalContentType>({
+        fileStorage,
         key: originalKey,
         parse: parseOriginalFile,
       }),
-      verify({ key: thumbnailKey, parse: parseThumbnailFile }),
+      verifyUploadedFile({
+        fileStorage,
+        key: thumbnailKey,
+        parse: parseThumbnailFile,
+      }),
     ]);
     if (!original || !thumbnail) {
       await deleteAll(pendingKeys);
