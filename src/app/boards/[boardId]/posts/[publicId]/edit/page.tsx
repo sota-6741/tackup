@@ -27,7 +27,7 @@ export default async function EditPostPage({
           href={`/boards/${post.boardId}/posts`}
           className="self-start text-muted-foreground text-sm underline-offset-4 hover:underline"
         >
-          掲示物の管理へ戻る
+          掲示物一覧へ戻る
         </Link>
         <h1 className="font-semibold text-2xl tracking-tight">掲示物を編集</h1>
       </header>

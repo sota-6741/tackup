@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBoard } from "@/di/board";
-import { listManagedPosts } from "@/di/post";
+import { listPosts } from "@/di/post";
 import { getSession } from "@/modules/auth/presentation/session";
-import { ManagedPostList } from "@/modules/post/presentation/managed-post-list";
+import { PostList } from "@/modules/post/presentation/post-list";
 
-export default async function PostManagementPage({
+export default async function PostListPage({
   params,
   searchParams,
 }: PageProps<"/boards/[boardId]/posts">) {
@@ -15,17 +15,17 @@ export default async function PostManagementPage({
   const { boardId } = await params;
   const { after } = await searchParams;
   const userId = session.user.id;
-  const [result, management] = await Promise.all([
+  const [result, list] = await Promise.all([
     getBoard({ boardId, userId }),
-    listManagedPosts({
+    listPosts({
       boardId,
       userId,
       cursor: typeof after === "string" ? after : undefined,
     }),
   ]);
-  if (!result.ok || !management.ok) notFound();
+  if (!result.ok || !list.ok) notFound();
   // 続きのページが空になった（前のページを開いたあとに、掲示開始を変えたなど）ときは、最初のページへ戻す。
-  if (management.isContinuation && management.posts.length === 0) {
+  if (list.isContinuation && list.posts.length === 0) {
     redirect(`/boards/${boardId}/posts`);
   }
   const { board } = result;
@@ -39,17 +39,17 @@ export default async function PostManagementPage({
         >
           {board.name}
         </Link>
-        <h1 className="font-semibold text-2xl tracking-tight">掲示物の管理</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">掲示物一覧</h1>
         <p className="text-muted-foreground text-sm">
           過去の掲示物も含めた、この掲示板のすべての掲示物です。掲示開始の新しい順に並びます。
         </p>
       </header>
-      <ManagedPostList
+      <PostList
         boardId={board.id}
-        posts={management.posts}
+        posts={list.posts}
         nextHref={
-          management.nextCursor &&
-          `/boards/${board.id}/posts?after=${encodeURIComponent(management.nextCursor)}`
+          list.nextCursor &&
+          `/boards/${board.id}/posts?after=${encodeURIComponent(list.nextCursor)}`
         }
       />
     </div>

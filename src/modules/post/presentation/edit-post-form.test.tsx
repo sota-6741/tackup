@@ -49,7 +49,7 @@ test("無期限の掲示物は、無期限にするにチェックを入れて�
   expect(screen.getByLabelText(/掲示終了/)).toBeDisabled();
 });
 
-test("保存すると、入力した値を送り、掲示物の管理へ移動する", async () => {
+test("保存すると、入力した値を送り、掲示物一覧へ移動する", async () => {
   vi.mocked(updatePostAction).mockResolvedValue({
     ok: true,
     boardId: "board-1",

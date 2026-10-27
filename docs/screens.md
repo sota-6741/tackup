@@ -56,7 +56,7 @@
 | S4 | 掲示物登録（ステップ3では仮の画面） | `/boards/{boardId}/posts/new` | 画面 |
 | S1 | 掲示物詳細 | `/posts/{publicId}` | 画面 |
 | S3 | 撤去タスク | `/boards/{boardId}/removals` | 画面 |
-| S8 | 掲示物の管理 | `/boards/{boardId}/posts` | 画面 |
+| S8 | 掲示物一覧 | `/boards/{boardId}/posts` | 画面 |
 | S8 | 掲示物の編集 | `/boards/{boardId}/posts/{publicId}/edit` | 画面 |
 | — | 404 | 該当なし | 画面 |
 
@@ -258,7 +258,7 @@ src/app/boards/new/page.tsx                  [Server] 見出しと CreateBoardFo
 
 | 導線 | 表示条件 | 追加するステップ |
 | -- | -- | -- |
-| 掲示物登録・撤去タスク・掲示物の管理 | メンバー | 4・7・8（追加済み） |
+| 掲示物登録・撤去タスク・掲示物一覧 | メンバー | 4・7・8（追加済み） |
 | 招待リンクの表示・コピー | 公開掲示板 | 9 |
 | 招待リンクの再発行・掲示板設定・メンバー管理 | admin | 9 |
 
@@ -462,14 +462,14 @@ src/app/boards/[boardId]/removals/page.tsx   [Server] getBoard・listRemovalTask
 
 ---
 
-## S8 掲示物の管理 `/boards/{boardId}/posts`
+## S8 掲示物一覧 `/boards/{boardId}/posts`
 
-要件 16・38.6。その掲示板のすべての掲示物を、状態を付けて並べる管理用の一覧。メンバー向けレイアウト（サイドバー）の中に表示する。設計は [design/post-management.md](design/post-management.md)。
+要件 16・38.6。その掲示板のすべての掲示物を、状態を付けて並べる管理用の一覧。メンバー向けレイアウト（サイドバー）の中に表示する。設計は [design/post-list.md](design/post-list.md)。
 
 ```
 ┌───────────────────────────────────────────┐
 │ 中野のボード                                │
-│ 掲示物の管理                                 │
+│ 掲示物一覧                                 │
 │ この掲示板のすべての掲示物です。…             │
 │ ┌───────────────────────────────────────┐ │
 │ │ ▢ 来年の夏祭り [掲示開始前]   [撤去済みにする] │ │
@@ -485,11 +485,11 @@ src/app/boards/[boardId]/removals/page.tsx   [Server] getBoard・listRemovalTask
 
 | 項目 | 内容 |
 | -- | -- |
-| データ | `getBoard({ boardId, userId })` と `listManagedPosts({ boardId, userId, cursor })` |
+| データ | `getBoard({ boardId, userId })` と `listPosts({ boardId, userId, cursor })` |
 | 開ける人 | その掲示板のメンバー（admin・poster）。メンバーでなければ 404 |
 | 表示する掲示物 | 状態を問わず、その掲示板のすべての掲示物 |
 | 並び順 | 掲示開始の新しい順（同じなら ID の大きい順） |
-| 見出し | 掲示板名（掲示板ボードへのリンク）と「掲示物の管理」（`h1`） |
+| 見出し | 掲示板名（掲示板ボードへのリンク）と「掲示物一覧」（`h1`） |
 | 各行 | サムネイル、タイトル（掲示物詳細へのリンク。先読みはしない）、状態のバッジ、掲示期間（無期限なら「無期限」）、撤去済みなら撤去した日時 |
 | 状態のバッジ | 下書き・掲示開始前・公開中・期限切れ・撤去待ち・撤去済み。domain の `postDisplayState` で、状態と日時から決める。期限切れ・撤去待ちだけ目立つ色にする |
 | 編集 | 撤去済みでない行に出す。掲示物の編集の画面へのリンク |
@@ -498,8 +498,8 @@ src/app/boards/[boardId]/removals/page.tsx   [Server] getBoard・listRemovalTask
 | ページ分け | 1 ページ 50 件。掲示板ボードと同じ（`?after={続きの位置}`） |
 
 ```
-src/app/boards/[boardId]/posts/page.tsx   [Server] getBoard・listManagedPosts。失敗なら 404
-└ ManagedPostList                         modules/post/presentation
+src/app/boards/[boardId]/posts/page.tsx   [Server] getBoard・listPosts。失敗なら 404
+└ PostList                                modules/post/presentation
   ├ LocalDateTime                         [Client]
   └ RemovePostButton                      [Client] 確認のダイアログ。removePostAction
 ```
@@ -512,10 +512,10 @@ src/app/boards/[boardId]/posts/page.tsx   [Server] getBoard・listManagedPosts�
 | -- | -- |
 | データ | `getEditablePost({ boardId, publicId, userId })` |
 | 開ける人 | その掲示板のメンバー。メンバーでない・ほかの掲示板の掲示物・撤去済みなら 404 |
-| 見出し | 「掲示物の管理へ戻る」のリンクと「掲示物を編集」（`h1`）。下に今のサムネイル |
+| 見出し | 「掲示物一覧へ戻る」のリンクと「掲示物を編集」（`h1`）。下に今のサムネイル |
 | 入力項目 | 登録と同じ（`PostFields`）。今の値を入れて開く。日時はブラウザのタイムゾーンで入れる。無期限の掲示物は「無期限にする」にチェックを入れて開く |
 | 確認 | 登録と同じ決まりを、送る前にブラウザでも確かめる |
-| 保存する | `updatePostAction`。成功したら掲示物の管理へ移動する。失敗したら理由を出す（撤去済みにされていた、回数の制限など） |
+| 保存する | `updatePostAction`。成功したら掲示物一覧へ移動する。失敗したら理由を出す（撤去済みにされていた、回数の制限など） |
 | 同時の編集 | あとから保存したほうが残る |
 
 ```

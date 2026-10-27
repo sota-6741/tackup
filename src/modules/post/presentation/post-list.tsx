@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ManagedPostView } from "@/modules/post/application/list-managed-posts";
+import type { PostListItem } from "@/modules/post/application/list-posts";
 import type { PostDisplayState } from "@/modules/post/domain/post-access";
 import { Badge } from "@/shared/presentation/components/ui/badge";
 import { buttonVariants } from "@/shared/presentation/components/ui/button";
@@ -14,19 +14,15 @@ const STATE_LABELS: Record<PostDisplayState, string> = {
   removed: "撤去済み",
 };
 
-type ManagedPostListProps = {
+type PostListProps = {
   boardId: string;
-  posts: ManagedPostView[];
+  posts: PostListItem[];
   /** 続きのページの URL。続きがなければ `null`。 */
   nextHref: string | null;
 };
 
 /** 掲示板のすべての掲示物を、状態を付けて並べる。サムネイルは、掲示板ボードと同じ理由で遅延読み込みにしない。 */
-export function ManagedPostList({
-  boardId,
-  posts,
-  nextHref,
-}: ManagedPostListProps) {
+export function PostList({ boardId, posts, nextHref }: PostListProps) {
   if (posts.length === 0) {
     return (
       <p className="py-16 text-center text-muted-foreground text-sm">

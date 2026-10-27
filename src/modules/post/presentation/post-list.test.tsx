@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import type { ManagedPostView } from "@/modules/post/application/list-managed-posts";
-import { ManagedPostList } from "./managed-post-list";
+import type { PostListItem } from "@/modules/post/application/list-posts";
+import { PostList } from "./post-list";
 
 vi.mock("./actions", () => ({ removePostAction: vi.fn() }));
 
-function managedPost(overrides: Partial<ManagedPostView>): ManagedPostView {
+function postListItem(overrides: Partial<PostListItem>): PostListItem {
   return {
     publicId: "public-1",
     title: "夏祭りのお知らせ",
@@ -23,7 +23,7 @@ function managedPost(overrides: Partial<ManagedPostView>): ManagedPostView {
 }
 
 test("掲示物がなければ、ないことを表示する", () => {
-  render(<ManagedPostList boardId="board-1" posts={[]} nextHref={null} />);
+  render(<PostList boardId="board-1" posts={[]} nextHref={null} />);
 
   expect(screen.getByText("まだ掲示物はありません")).toBeInTheDocument();
 });
@@ -36,9 +36,9 @@ test.each([
   ["removed", "撤去済み"],
 ] as const)("状態が %s の掲示物には「%s」と表示する", (state, label) => {
   render(
-    <ManagedPostList
+    <PostList
       boardId="board-1"
-      posts={[managedPost({ state })]}
+      posts={[postListItem({ state })]}
       nextHref={null}
     />,
   );
@@ -48,11 +48,11 @@ test.each([
 
 test("タイトルは掲示物詳細へのリンクで、掲示期間を表示する。無期限なら「無期限」と出す", () => {
   render(
-    <ManagedPostList
+    <PostList
       boardId="board-1"
       posts={[
-        managedPost({}),
-        managedPost({
+        postListItem({}),
+        postListItem({
           publicId: "public-2",
           title: "清掃の案内",
           expiresAt: null,
@@ -70,11 +70,11 @@ test("タイトルは掲示物詳細へのリンクで、掲示期間を表示�
 
 test("撤去済みにできる掲示物にだけ「撤去済みにする」を出し、撤去済みには撤去の日時を出す", () => {
   const { container } = render(
-    <ManagedPostList
+    <PostList
       boardId="board-1"
       posts={[
-        managedPost({}),
-        managedPost({
+        postListItem({}),
+        postListItem({
           publicId: "public-2",
           title: "去年の夏祭り",
           state: "removed",
@@ -98,9 +98,9 @@ test("撤去済みにできる掲示物にだけ「撤去済みにする」を�
 
 test("続きがあれば、続きのページへのリンクを表示する", () => {
   render(
-    <ManagedPostList
+    <PostList
       boardId="board-1"
-      posts={[managedPost({})]}
+      posts={[postListItem({})]}
       nextHref="/boards/board-1/posts?after=cursor"
     />,
   );
@@ -113,11 +113,11 @@ test("続きがあれば、続きのページへのリンクを表示する", ()
 
 test("編集できる掲示物にだけ、編集の画面へのリンクを出す", () => {
   render(
-    <ManagedPostList
+    <PostList
       boardId="board-1"
       posts={[
-        managedPost({}),
-        managedPost({
+        postListItem({}),
+        postListItem({
           publicId: "public-2",
           title: "去年の夏祭り",
           state: "removed",
