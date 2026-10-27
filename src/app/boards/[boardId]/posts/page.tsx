@@ -45,6 +45,7 @@ export default async function PostListPage({
         </p>
       </header>
       <PostList
+        boardId={board.id}
         posts={list.posts}
         nextHref={
           list.nextCursor &&

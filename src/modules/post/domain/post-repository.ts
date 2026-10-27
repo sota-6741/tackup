@@ -47,6 +47,11 @@ export interface PostRepository {
    * 書き換えたら `true`。ほかの人が先に撤去済みにしたなど、状態が `published` でなければ何もせずに `false`。
    */
   markRemoved(input: MarkRemovedInput): Promise<boolean>;
+  /**
+   * タイトル・説明文・外部リンク・掲示期間を書き換える。
+   * 書き換えたら `true`。撤去済み（編集の画面を開いたあとに、ほかの人が撤去済みにしたなど）なら何もせずに `false`。
+   */
+  update(data: UpdatePostData): Promise<boolean>;
   /** 公開の URL に使う ID から探す。公開中かどうかは見ない。 */
   findByPublicId(publicId: string): Promise<Post | null>;
 }
@@ -79,3 +84,8 @@ export type FindByBoardIdInput = {
   limit: number;
   after?: PostCursor;
 };
+
+export type UpdatePostData = Pick<
+  Post,
+  "id" | "title" | "description" | "externalUrl" | "publishFrom" | "expiresAt"
+>;

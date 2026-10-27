@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createUploadUrls, registerPost, removePost } from "@/di/post";
+import {
+  createUploadUrls,
+  registerPost,
+  removePost,
+  updatePost,
+} from "@/di/post";
 import { getSession } from "@/modules/auth/presentation/session";
 import type {
   CreateUploadUrlsResult,
@@ -11,8 +16,13 @@ import type {
 } from "@/modules/post/application/create-upload-urls";
 import type { RegisterPostResult } from "@/modules/post/application/register-post";
 import type { RemovePostResult } from "@/modules/post/application/remove-post";
+import type { UpdatePostResult } from "@/modules/post/application/update-post";
 import { ORIGINAL_FILE_MAX_SIZE } from "@/modules/post/domain/original-file";
 import type { RateLimited } from "@/shared/domain/rate-limiter";
+import type {
+  ActionFailureReason,
+  ActionResult,
+} from "@/shared/presentation/lib/action-result";
 import { RATE_LIMITED_MESSAGE } from "@/shared/presentation/lib/messages";
 import { POST_INPUT_ERROR_MESSAGES } from "./post-messages";
 
@@ -166,9 +176,69 @@ export async function removePostAction(
     return { ok: false, error: REMOVE_POST_ERROR_MESSAGES[result.reason] };
   }
 
-  revalidatePath(`/boards/${result.boardId}/removals`);
-  revalidatePath(`/boards/${result.boardId}/posts`);
-  revalidatePath(`/boards/${result.boardId}`);
+  revalidatePostPages({ boardId: result.boardId, publicId });
+  return { ok: true };
+}
+
+/** 掲示物を変えたときに、その掲示物が出る画面をすべて読み込み直させる。 */
+function revalidatePostPages({
+  boardId,
+  publicId,
+}: {
+  boardId: string;
+  publicId: string;
+}) {
+  revalidatePath(`/boards/${boardId}`);
+  revalidatePath(`/boards/${boardId}/removals`);
+  revalidatePath(`/boards/${boardId}/posts`);
   revalidatePath(`/posts/${publicId}`);
+}
+
+const updatePostInput = z.object({
+  publicId: z.string(),
+  title: z.string(),
+  description: z.string(),
+  externalUrl: z.string(),
+  publishFrom: z.iso.datetime(),
+  expiresAt: z.iso.datetime().nullable(),
+});
+
+const UPDATE_POST_ERROR_MESSAGES: Record<
+  ActionFailureReason<UpdatePostResult>,
+  string
+> = {
+  invalid_input:
+    "保存できませんでした。画面を読み込み直して、もう一度お試しください。",
+  rate_limited: RATE_LIMITED_MESSAGE,
+  post_not_found:
+    "掲示物が見つかりません。画面を読み込み直して、もう一度お試しください。",
+  post_not_editable: "撤去済みの掲示物は編集できません。",
+  ...POST_INPUT_ERROR_MESSAGES,
+};
+
+export async function updatePostAction(input: unknown): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+
+  const parsed = updatePostInput.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: UPDATE_POST_ERROR_MESSAGES.invalid_input };
+  }
+  const { publicId, expiresAt } = parsed.data;
+
+  const result = await updatePost({
+    publicId,
+    userId: session.user.id,
+    title: parsed.data.title,
+    description: parsed.data.description,
+    externalUrl: parsed.data.externalUrl,
+    publishFrom: new Date(parsed.data.publishFrom),
+    expiresAt: expiresAt === null ? null : new Date(expiresAt),
+  });
+  if (!result.ok) {
+    return { ok: false, error: UPDATE_POST_ERROR_MESSAGES[result.reason] };
+  }
+
+  revalidatePostPages({ boardId: result.boardId, publicId });
   return { ok: true };
 }

@@ -478,3 +478,53 @@ test("掲示物一覧には、状態を問わずその掲示板のすべての�
     new Set(["published", "removed", "draft"]),
   );
 });
+
+test("編集すると、タイトル・説明文・外部リンク・掲示期間を書き換え、ほかの値は変えない", async () => {
+  const board = await createBoard();
+  const created = await repository.create(postData(board.id));
+
+  const updated = await repository.update({
+    id: created.id,
+    title: "夏祭りのお知らせ（延期）",
+    description: "雨天延期です。",
+    externalUrl: "https://example.com/festival",
+    publishFrom: new Date("2026-10-05T00:00:00Z"),
+    expiresAt: null,
+  });
+
+  expect(updated).toBe(true);
+  const found = await repository.findByPublicId(created.publicId);
+  expect(found).toMatchObject({
+    title: "夏祭りのお知らせ（延期）",
+    description: "雨天延期です。",
+    externalUrl: "https://example.com/festival",
+    publishFrom: new Date("2026-10-05T00:00:00Z"),
+    expiresAt: null,
+    status: "published",
+    originalKey: created.originalKey,
+  });
+  expect(found?.updatedAt.getTime()).toBeGreaterThanOrEqual(
+    created.updatedAt.getTime(),
+  );
+});
+
+test("撤去済みの掲示物は編集せず、false を返す", async () => {
+  const board = await createBoard();
+  const created = await repository.create(
+    postData(board.id, { status: "removed" }),
+  );
+
+  const updated = await repository.update({
+    id: created.id,
+    title: "書き換え",
+    description: null,
+    externalUrl: null,
+    publishFrom: created.publishFrom,
+    expiresAt: created.expiresAt,
+  });
+
+  expect(updated).toBe(false);
+  expect((await repository.findByPublicId(created.publicId))?.title).toBe(
+    created.title,
+  );
+});

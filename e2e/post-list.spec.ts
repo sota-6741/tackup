@@ -128,3 +128,50 @@ test("掲示物一覧の続きのページに何もなければ、最初のペ�
   await expect(page).toHaveURL(`${boardUrl}/posts`);
   await expect(page.getByText("まだ掲示物はありません")).toBeVisible();
 });
+
+test("掲示物を編集すると、掲示物一覧と掲示物詳細に反映される。撤去済みには編集の導線を出さない", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  const boardUrl = await createBoard(page);
+  await registerPost(page, {
+    boardUrl,
+    title: "夏祭りのお知らせ",
+    publishFrom: "2026-01-01T00:00",
+    expiresAt: "2099-08-01T00:00",
+  });
+  await page.goto(`${boardUrl}/posts`);
+  const row = page
+    .getByRole("listitem")
+    .filter({ hasText: "夏祭りのお知らせ" });
+
+  await row.getByRole("link", { name: "編集" }).click();
+  await expect(page).toHaveURL(/\/posts\/[A-Za-z0-9_-]+\/edit$/);
+  await expect(page.getByLabel(/タイトル/)).toHaveValue("夏祭りのお知らせ");
+  await expect(page.getByLabel(/掲示開始/)).toHaveValue("2026-01-01T00:00");
+  await page.getByLabel(/タイトル/).fill("夏祭りのお知らせ（雨天延期）");
+  await page.getByRole("checkbox", { name: "無期限にする" }).click();
+  await page.getByLabel("説明文").fill("8月8日に延期します。");
+  await page.getByRole("button", { name: "保存する" }).click();
+
+  await expect(page).toHaveURL(`${boardUrl}/posts`);
+  const updated = page
+    .getByRole("listitem")
+    .filter({ hasText: "夏祭りのお知らせ（雨天延期）" });
+  await expect(updated).toContainText("無期限");
+  await updated
+    .getByRole("link", { name: "夏祭りのお知らせ（雨天延期）" })
+    .click();
+  await expect(page.getByText("8月8日に延期します。")).toBeVisible();
+
+  // 撤去済みにすると、編集の導線は消える。
+  await page.goto(`${boardUrl}/posts`);
+  await updated.getByRole("button", { name: "撤去済みにする" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "撤去済みにする" })
+    .click();
+  await expect(updated).toContainText("撤去済み");
+  await expect(updated.getByRole("link", { name: "編集" })).toHaveCount(0);
+});

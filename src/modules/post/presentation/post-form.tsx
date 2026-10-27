@@ -8,28 +8,23 @@ import {
   type OriginalFileError,
   parseOriginalFile,
 } from "@/modules/post/domain/original-file";
-import {
-  POST_DESCRIPTION_MAX_LENGTH,
-  POST_EXTERNAL_URL_MAX_LENGTH,
-  POST_TITLE_MAX_LENGTH,
-  parsePostDescription,
-  parsePostExternalUrl,
-  parsePostTitle,
-  parsePublishPeriod,
-} from "@/modules/post/domain/post";
+import { POST_TITLE_MAX_LENGTH } from "@/modules/post/domain/post";
 import type {
   CreateThumbnailResult,
   ThumbnailError,
 } from "@/modules/post/domain/thumbnail";
 import { Button } from "@/shared/presentation/components/ui/button";
-import { Checkbox } from "@/shared/presentation/components/ui/checkbox";
 import { Input } from "@/shared/presentation/components/ui/input";
 import { Label } from "@/shared/presentation/components/ui/label";
-import { Textarea } from "@/shared/presentation/components/ui/textarea";
 import { createUploadUrlsAction, registerPostAction } from "./actions";
 import { createThumbnail } from "./create-thumbnail";
-import { datetimeLocalToIso, toDatetimeLocalValue } from "./datetime-local";
-import { POST_INPUT_ERROR_MESSAGES } from "./post-messages";
+import { toDatetimeLocalValue } from "./datetime-local";
+import {
+  EMPTY_POST_FIELD_VALUES,
+  type ParsedPostFields,
+  PostFields,
+  parsePostFields,
+} from "./post-fields";
 import { uploadFile } from "./upload-file";
 
 const MAX_SIZE_MB = ORIGINAL_FILE_MAX_SIZE / 1024 / 1024;
@@ -59,65 +54,19 @@ function titleFromFileName(name: string): string {
   return name.replace(/\.[^.]+$/, "").slice(0, POST_TITLE_MAX_LENGTH);
 }
 
-/** サーバーでも同じ決まりを確かめる。ここで先に確かめるのは、登録できない入力のためにアップロードしないため。 */
-function parsePostInput({
-  title,
-  description,
-  externalUrl,
-  publishFrom,
-  expiresAt,
-}: {
-  title: string;
-  description: string;
-  externalUrl: string;
-  publishFrom: string;
-  /** 無期限なら `null`。 */
-  expiresAt: string | null;
-}):
-  | { ok: true; publishFromIso: string; expiresAtIso: string | null }
-  | { ok: false; message: string } {
-  const postTitle = parsePostTitle(title);
-  if (!postTitle.ok) {
-    return { ok: false, message: POST_INPUT_ERROR_MESSAGES[postTitle.reason] };
-  }
-  const optional = [
-    parsePostDescription(description),
-    parsePostExternalUrl(externalUrl),
-  ].find((result) => !result.ok);
-  if (optional && !optional.ok) {
-    return { ok: false, message: POST_INPUT_ERROR_MESSAGES[optional.reason] };
-  }
-  const publishFromIso = datetimeLocalToIso(publishFrom);
-  const expiresAtIso =
-    expiresAt === null ? null : datetimeLocalToIso(expiresAt);
-  if (!publishFromIso || (expiresAt !== null && !expiresAtIso)) {
-    return { ok: false, message: POST_INPUT_ERROR_MESSAGES.period_invalid };
-  }
-  const period = parsePublishPeriod({
-    publishFrom: new Date(publishFromIso),
-    expiresAt: expiresAtIso === null ? null : new Date(expiresAtIso),
-  });
-  if (!period.ok) {
-    return { ok: false, message: POST_INPUT_ERROR_MESSAGES[period.reason] };
-  }
-  return { ok: true, publishFromIso, expiresAtIso };
-}
-
 export function PostForm({ boardId }: { boardId: string }) {
   const [original, setOriginal] = useState<Original>({ status: "idle" });
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [externalUrl, setExternalUrl] = useState("");
-  const [publishFrom, setPublishFrom] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
-  const [unlimited, setUnlimited] = useState(false);
+  const [fields, setFields] = useState(EMPTY_POST_FIELD_VALUES);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   // サーバーとブラウザでタイムゾーンが違うので、今の日時はブラウザで描画したあとに入れる。
   useEffect(() => {
-    setPublishFrom(toDatetimeLocalValue(new Date()));
+    setFields((current) => ({
+      ...current,
+      publishFrom: toDatetimeLocalValue(new Date()),
+    }));
   }, []);
 
   useEffect(() => {
@@ -167,19 +116,20 @@ export function PostForm({ boardId }: { boardId: string }) {
       thumbnail,
       previewUrl: URL.createObjectURL(thumbnail.blob),
     });
-    setTitle((current) => current || titleFromFileName(file.name));
+    setFields((current) => ({
+      ...current,
+      title: current.title || titleFromFileName(file.name),
+    }));
   }
 
   async function submit({
     file,
     thumbnail,
-    publishFromIso,
-    expiresAtIso,
+    parsed,
   }: {
     file: File;
     thumbnail: Thumbnail;
-    publishFromIso: string;
-    expiresAtIso: string | null;
+    parsed: ParsedPostFields;
   }) {
     const urls = await createUploadUrlsAction({
       boardId,
@@ -205,11 +155,11 @@ export function PostForm({ boardId }: { boardId: string }) {
 
     const result = await registerPostAction({
       boardId,
-      title,
-      description,
-      externalUrl,
-      publishFrom: publishFromIso,
-      expiresAt: expiresAtIso,
+      title: parsed.title,
+      description: parsed.description,
+      externalUrl: parsed.externalUrl,
+      publishFrom: parsed.publishFromIso,
+      expiresAt: parsed.expiresAtIso,
       originalKey: urls.original.key,
       thumbnailKey: urls.thumbnail.key,
       thumbnailWidth: thumbnail.width,
@@ -228,23 +178,14 @@ export function PostForm({ boardId }: { boardId: string }) {
       setError("ファイルを選んでください。");
       return;
     }
-    const period = parsePostInput({
-      title,
-      description,
-      externalUrl,
-      publishFrom,
-      expiresAt: unlimited ? null : expiresAt,
-    });
-    if (!period.ok) {
-      setError(period.message);
+    const parsed = parsePostFields(fields);
+    if (!parsed.ok) {
+      setError(parsed.message);
       return;
     }
     setError(null);
     const { file, thumbnail } = original;
-    const { publishFromIso, expiresAtIso } = period;
-    startTransition(() =>
-      submit({ file, thumbnail, publishFromIso, expiresAtIso }),
-    );
+    startTransition(() => submit({ file, thumbnail, parsed: parsed.fields }));
   }
 
   const busy = pending || original.status === "generating";
@@ -294,94 +235,7 @@ export function PostForm({ boardId }: { boardId: string }) {
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="post-title">
-          タイトル <span className="text-muted-foreground">*</span>
-        </Label>
-        <Input
-          id="post-title"
-          required
-          maxLength={POST_TITLE_MAX_LENGTH}
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          aria-describedby="post-title-message"
-        />
-        <p id="post-title-message" className="text-muted-foreground text-sm">
-          {POST_TITLE_MAX_LENGTH}文字以内
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="post-publish-from">
-            掲示開始 <span className="text-muted-foreground">*</span>
-          </Label>
-          <Input
-            id="post-publish-from"
-            type="datetime-local"
-            required
-            value={publishFrom}
-            onChange={(event) => setPublishFrom(event.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="post-expires-at">
-            掲示終了{" "}
-            {!unlimited && <span className="text-muted-foreground">*</span>}
-          </Label>
-          <Input
-            id="post-expires-at"
-            type="datetime-local"
-            required={!unlimited}
-            disabled={unlimited}
-            min={publishFrom}
-            value={unlimited ? "" : expiresAt}
-            onChange={(event) => setExpiresAt(event.target.value)}
-          />
-          <Label className="font-normal">
-            <Checkbox checked={unlimited} onCheckedChange={setUnlimited} />
-            無期限にする
-          </Label>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="post-description">説明文</Label>
-        <Textarea
-          id="post-description"
-          rows={4}
-          maxLength={POST_DESCRIPTION_MAX_LENGTH}
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          aria-describedby="post-description-message"
-        />
-        <p
-          id="post-description-message"
-          className="text-muted-foreground text-sm"
-        >
-          {POST_DESCRIPTION_MAX_LENGTH}文字以内（省略できます）
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="post-external-url">外部リンク</Label>
-        <Input
-          id="post-external-url"
-          type="url"
-          inputMode="url"
-          placeholder="https://"
-          maxLength={POST_EXTERNAL_URL_MAX_LENGTH}
-          value={externalUrl}
-          onChange={(event) => setExternalUrl(event.target.value)}
-          aria-describedby="post-external-url-message"
-        />
-        <p
-          id="post-external-url-message"
-          className="text-muted-foreground text-sm"
-        >
-          申し込みフォームや詳しい案内のページなど（省略できます）
-        </p>
-      </div>
+      <PostFields values={fields} onChange={setFields} />
 
       <div className="flex flex-col items-end gap-3">
         {error && (

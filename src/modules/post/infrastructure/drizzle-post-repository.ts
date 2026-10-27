@@ -20,6 +20,7 @@ import type {
   FindPublishedInput,
   MarkRemovedInput,
   PostRepository,
+  UpdatePostData,
 } from "@/modules/post/domain/post-repository";
 import { withSafeDatabaseErrors } from "@/shared/infrastructure/database-error";
 import type { DbExecutor } from "@/shared/infrastructure/db";
@@ -145,6 +146,23 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
     return updated.length > 0;
   }
 
+  async function update({
+    id,
+    title,
+    description,
+    externalUrl,
+    publishFrom,
+    expiresAt,
+  }: UpdatePostData): Promise<boolean> {
+    // 撤去済みでないことの確認と書き換えを 1 つの UPDATE で行う。確認のあとに撤去済みにされても、書き換えない。
+    const updated = await db
+      .update(post)
+      .set({ title, description, externalUrl, publishFrom, expiresAt })
+      .where(and(eq(post.id, id), ne(post.status, "removed")))
+      .returning({ id: post.id });
+    return updated.length > 0;
+  }
+
   async function findByPublicId(publicId: string): Promise<Post | null> {
     if (!PUBLIC_ID_PATTERN.test(publicId)) return null;
     const [found] = await db
@@ -162,6 +180,7 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
     findByBoardId,
     findExpired,
     markRemoved,
+    update,
     findByPublicId,
   });
 }

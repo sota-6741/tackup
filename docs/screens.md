@@ -57,6 +57,7 @@
 | S1 | 掲示物詳細 | `/posts/{publicId}` | 画面 |
 | S3 | 撤去タスク | `/boards/{boardId}/removals` | 画面 |
 | S8 | 掲示物一覧 | `/boards/{boardId}/posts` | 画面 |
+| S8 | 掲示物の編集 | `/boards/{boardId}/posts/{publicId}/edit` | 画面 |
 | — | 404 | 該当なし | 画面 |
 
 ---
@@ -468,7 +469,7 @@ src/app/boards/[boardId]/removals/page.tsx   [Server] getBoard・listRemovalTask
 ```
 ┌───────────────────────────────────────────┐
 │ 中野のボード                                │
-│ 掲示物一覧                                   │
+│ 掲示物一覧                                 │
 │ この掲示板のすべての掲示物です。…             │
 │ ┌───────────────────────────────────────┐ │
 │ │ ▢ 来年の夏祭り [掲示開始前]   [撤去済みにする] │ │
@@ -491,15 +492,36 @@ src/app/boards/[boardId]/removals/page.tsx   [Server] getBoard・listRemovalTask
 | 見出し | 掲示板名（掲示板ボードへのリンク）と「掲示物一覧」（`h1`） |
 | 各行 | サムネイル、タイトル（掲示物詳細へのリンク。先読みはしない）、状態のバッジ、掲示期間（無期限なら「無期限」）、撤去済みなら撤去した日時 |
 | 状態のバッジ | 下書き・掲示開始前・公開中・期限切れ・撤去待ち・撤去済み。domain の `postDisplayState` で、状態と日時から決める。期限切れ・撤去待ちだけ目立つ色にする |
+| 編集 | 撤去済みでない行に出す。掲示物の編集の画面へのリンク |
 | 撤去済みにする | 状態が `published` の行（掲示開始前・公開中・期限切れ）に出す。撤去タスクと同じ確認のダイアログ（`RemovePostButton`）。撤去済みにすると、行の状態が撤去済みに変わる |
 | 1 件もないとき | 「まだ掲示物はありません」 |
 | ページ分け | 1 ページ 50 件。掲示板ボードと同じ（`?after={続きの位置}`） |
 
 ```
 src/app/boards/[boardId]/posts/page.tsx   [Server] getBoard・listPosts。失敗なら 404
-└ PostList                                     modules/post/presentation
+└ PostList                                modules/post/presentation
   ├ LocalDateTime                         [Client]
   └ RemovePostButton                      [Client] 確認のダイアログ。removePostAction
+```
+
+### 掲示物の編集 `/boards/{boardId}/posts/{publicId}/edit`
+
+要件 17。タイトル・掲示期間・説明文・外部リンクを書き換える。メンバー向けレイアウトの中に表示する。
+
+| 項目 | 内容 |
+| -- | -- |
+| データ | `getEditablePost({ boardId, publicId, userId })` |
+| 開ける人 | その掲示板のメンバー。メンバーでない・ほかの掲示板の掲示物・撤去済みなら 404 |
+| 見出し | 「掲示物一覧へ戻る」のリンクと「掲示物を編集」（`h1`）。下に今のサムネイル |
+| 入力項目 | 登録と同じ（`PostFields`）。今の値を入れて開く。日時はブラウザのタイムゾーンで入れる。無期限の掲示物は「無期限にする」にチェックを入れて開く |
+| 確認 | 登録と同じ決まりを、送る前にブラウザでも確かめる |
+| 保存する | `updatePostAction`。成功したら掲示物一覧へ移動する。失敗したら理由を出す（撤去済みにされていた、回数の制限など） |
+| 同時の編集 | あとから保存したほうが残る |
+
+```
+src/app/boards/[boardId]/posts/[publicId]/edit/page.tsx   [Server] getEditablePost。失敗なら 404
+└ EditPostForm                                            [Client] modules/post/presentation
+  └ PostFields                                            登録の画面と共通の入力欄
 ```
 
 ---

@@ -86,14 +86,19 @@ test("すべての状態の掲示物を、状態を付けて掲示開始の新�
   if (!result.ok) throw new Error("一覧を取れない");
 
   expect(
-    result.posts.map((post) => [post.title, post.state, post.canRemove]),
+    result.posts.map((post) => [
+      post.title,
+      post.state,
+      post.canRemove,
+      post.canEdit,
+    ]),
   ).toEqual([
-    ["掲示物 2", "upcoming", true],
-    ["掲示物 1", "published", true],
-    ["掲示物 3", "expired", true],
-    ["掲示物 4", "draft", false],
-    ["掲示物 5", "published", true],
-    ["掲示物 6", "removed", false],
+    ["掲示物 2", "upcoming", true, true],
+    ["掲示物 1", "published", true, true],
+    ["掲示物 3", "expired", true, true],
+    ["掲示物 4", "draft", false, true],
+    ["掲示物 5", "published", true, true],
+    ["掲示物 6", "removed", false, false],
   ]);
   expect(result.posts[1]).toEqual({
     publicId: "public-1",
@@ -106,6 +111,7 @@ test("すべての状態の掲示物を、状態を付けて掲示開始の新�
     state: "published",
     removedAt: null,
     canRemove: true,
+    canEdit: true,
   });
   expect(result.posts[4].expiresAt).toBeNull();
   expect(result.posts[5].removedAt).toEqual(new Date("2026-07-10T00:00:00Z"));
