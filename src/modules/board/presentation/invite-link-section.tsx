@@ -16,9 +16,27 @@ import {
 import { Button } from "@/shared/presentation/components/ui/button";
 import { Input } from "@/shared/presentation/components/ui/input";
 import { Label } from "@/shared/presentation/components/ui/label";
-import { reissueInviteTokenAction } from "./actions";
+import { getCurrentInviteUrlAction, reissueInviteTokenAction } from "./actions";
 
 const COPIED_DURATION_MS = 2000;
+
+/**
+ * 中身があとで決まる文字列を、クリップボードに書き込む。
+ * サーバーの応答を待ってから書き込むと、Safari などはボタンを押した操作の外とみなして拒否するので、
+ * 使えるブラウザでは、押した時点で ClipboardItem に Promise を渡して書き込みを始める。
+ */
+async function writeToClipboard(text: Promise<string>): Promise<void> {
+  if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+    const blob = text.then(
+      (value) => new Blob([value], { type: "text/plain" }),
+    );
+    await navigator.clipboard.write([
+      new ClipboardItem({ "text/plain": blob }),
+    ]);
+    return;
+  }
+  await navigator.clipboard.writeText(await text);
+}
 
 type InviteLinkSectionProps = {
   boardId: string;
@@ -34,6 +52,7 @@ export function InviteLinkSection({
   const [inviteUrl, setInviteUrl] = useState(initialInviteUrl);
   const [copied, setCopied] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [reissueError, setReissueError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,14 +63,40 @@ export function InviteLinkSection({
     return () => clearTimeout(timer);
   }, [copied]);
 
+  /** イベントハンドラーの中の例外は error.tsx に届かないので、描画の中で投げ直す。 */
+  function throwInRender(error: unknown): never {
+    setCopied(() => {
+      throw error;
+    });
+    throw error;
+  }
+
+  /** 画面を開いたあとに再発行されていることがあるので、コピーのたびに今の招待リンクを取り直す。 */
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopied(true);
-    } catch {
-      // クリップボードを使えないときは、手でコピーできるよう URL を選択しておく。
-      inputRef.current?.select();
+    setCopyError(null);
+    const latest = getCurrentInviteUrlAction(boardId);
+    const written = await writeToClipboard(
+      latest.then((result) => {
+        if (!result.ok) throw new Error(result.error);
+        return result.inviteUrl;
+      }),
+    ).then(
+      () => true,
+      () => false,
+    );
+
+    const result = await latest.catch(throwInRender);
+    if (!result.ok) {
+      setCopyError(result.error);
+      return;
     }
+    setInviteUrl(result.inviteUrl);
+    if (written) {
+      setCopied(true);
+      return;
+    }
+    // クリップボードを使えないときは、手でコピーできるよう URL を選択しておく。
+    setTimeout(() => inputRef.current?.select());
   }
 
   function changeDialogOpen(open: boolean) {
@@ -129,6 +174,11 @@ export function InviteLinkSection({
           </AlertDialog>
         )}
       </div>
+      {copyError && (
+        <p role="alert" className="text-destructive text-sm">
+          {copyError}
+        </p>
+      )}
     </div>
   );
 }

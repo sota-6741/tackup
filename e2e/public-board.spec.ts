@@ -135,3 +135,42 @@ test("招待リンクを再発行すると、以前のリンクでは開けず�
     visitor.page.getByRole("heading", { level: 1, name: "中野のボード" }),
   ).toBeVisible();
 });
+
+test("ほかの画面で再発行されたあとにコピーすると、新しい招待リンクをコピーし、表示も差し替える", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await signIn(context);
+  const boardUrl = await createBoard(page, {
+    name: "中野のボード",
+    isPublic: true,
+  });
+  const stale = await context.newPage();
+  await stale.goto(boardUrl);
+  const oldUrl = await stale
+    .getByLabel("招待リンク", { exact: true })
+    .inputValue();
+
+  await page.getByRole("button", { name: "再発行" }).click();
+  await page.getByRole("button", { name: "再発行する" }).click();
+  await expect(page.getByLabel("招待リンク", { exact: true })).not.toHaveValue(
+    oldUrl,
+  );
+  const newUrl = await page
+    .getByLabel("招待リンク", { exact: true })
+    .inputValue();
+
+  // 古い画面のまま「コピー」を押す。
+  await stale.bringToFront();
+  await stale.getByRole("button", { name: "コピー" }).click();
+  await expect(
+    stale.getByRole("button", { name: "コピーしました" }),
+  ).toBeVisible();
+  expect(await stale.evaluate(() => navigator.clipboard.readText())).toBe(
+    newUrl,
+  );
+  await expect(stale.getByLabel("招待リンク", { exact: true })).toHaveValue(
+    newUrl,
+  );
+});
