@@ -3,6 +3,7 @@ import type {
   CheckBoardAccessResult,
 } from "@/modules/board/application/check-board-access";
 import { ROLES } from "@/modules/board/domain/board-member";
+import { isRemovable } from "@/modules/post/domain/post";
 import type { PostRepository } from "@/modules/post/domain/post-repository";
 
 type Deps = {
@@ -51,7 +52,7 @@ export function makeRemovePost({
     if (!access.ok) return { ok: false, reason: "post_not_found" };
 
     if (post.status === "removed") return { ok: true, boardId: post.boardId };
-    if (post.status !== "published") {
+    if (!isRemovable(post)) {
       return { ok: false, reason: "post_not_removable" };
     }
 

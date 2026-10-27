@@ -8,6 +8,7 @@ import {
   encodeRemovalCursor,
   isExpired,
   isPublished,
+  isRemovable,
   POST_DESCRIPTION_MAX_LENGTH,
   POST_TITLE_MAX_LENGTH,
   parsePostCursor,
@@ -263,3 +264,14 @@ test.each([
 ])("撤去タスクの続きの位置が %s なら null になる", (_, value) => {
   expect(parseRemovalCursor(value)).toBeNull();
 });
+
+test.each([
+  ["published", true],
+  ["draft", false],
+  ["removed", false],
+] as const)(
+  "状態が %s の掲示物を撤去済みにできるか: %s",
+  (status, removable) => {
+    expect(isRemovable({ status })).toBe(removable);
+  },
+);

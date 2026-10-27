@@ -169,6 +169,11 @@ export function isExpired(post: PublishState, now: Date): boolean {
   );
 }
 
+/** 撤去済みにできるか。期限切れかどうかは問わない。下書きは貼り出していないので、撤去済みにしない。 */
+export function isRemovable(post: Pick<Post, "status">): boolean {
+  return post.status === "published";
+}
+
 /** 一覧の 1 ページの件数。 */
 export const POST_PAGE_SIZE = 50;
 

@@ -33,6 +33,11 @@ export interface PostRepository {
    */
   findPublished(input: FindPublishedInput): Promise<Post[]>;
   /**
+   * 掲示板のすべての掲示物（状態を問わない）を、掲示開始の新しい順（同じなら ID の大きい順）に、最大 `limit` 件返す。
+   * `after` を渡すと、その位置より後ろを返す。
+   */
+  findByBoardId(input: FindByBoardIdInput): Promise<Post[]>;
+  /**
    * `now` の時点で期限切れ（掲示終了を過ぎたのに、まだ撤去済みになっていない）の掲示物を、
    * 掲示終了の古い順（同じなら ID の小さい順）に、最大 `limit` 件返す。期限切れの条件は domain の `isExpired` と同じ。
    */
@@ -67,4 +72,10 @@ export type MarkRemovedInput = {
   id: string;
   removedAt: Date;
   removedBy: string;
+};
+
+export type FindByBoardIdInput = {
+  boardId: string;
+  limit: number;
+  after?: PostCursor;
 };

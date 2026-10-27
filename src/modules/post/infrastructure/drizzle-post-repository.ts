@@ -11,10 +11,11 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import type { Post } from "@/modules/post/domain/post";
+import type { Post, PostCursor } from "@/modules/post/domain/post";
 import type {
   CreatePostData,
   ExpiredPost,
+  FindByBoardIdInput,
   FindExpiredInput,
   FindPublishedInput,
   MarkRemovedInput,
@@ -38,6 +39,11 @@ function publishedAt(now: Date) {
     lte(post.publishFrom, now),
     or(isNull(post.expiresAt), gt(post.expiresAt, now)),
   );
+}
+
+/** 掲示開始の新しい順の一覧の、続きの条件。行どうしの比較にすると、索引の途中から読み始められる。OR で書くと、先頭から読んで捨てることになる。 */
+function afterCursor(after: PostCursor) {
+  return sql`(${post.publishFrom}, ${post.id}) < (${after.publishFrom.toISOString()}::timestamptz, ${after.id}::uuid)`;
 }
 
 function hasExpiresAt(found: Post): found is ExpiredPost {
@@ -80,14 +86,29 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
     limit,
     after,
   }: FindPublishedInput): Promise<Post[]> {
-    // 行どうしの比較にすると、索引の途中から読み始められる。OR で書くと、先頭から読んで捨てることになる。
-    const afterCursor =
-      after &&
-      sql`(${post.publishFrom}, ${post.id}) < (${after.publishFrom.toISOString()}::timestamptz, ${after.id}::uuid)`;
     return db
       .select()
       .from(post)
-      .where(and(eq(post.boardId, boardId), publishedAt(now), afterCursor))
+      .where(
+        and(
+          eq(post.boardId, boardId),
+          publishedAt(now),
+          after && afterCursor(after),
+        ),
+      )
+      .orderBy(desc(post.publishFrom), desc(post.id))
+      .limit(limit);
+  }
+
+  async function findByBoardId({
+    boardId,
+    limit,
+    after,
+  }: FindByBoardIdInput): Promise<Post[]> {
+    return db
+      .select()
+      .from(post)
+      .where(and(eq(post.boardId, boardId), after && afterCursor(after)))
       .orderBy(desc(post.publishFrom), desc(post.id))
       .limit(limit);
   }
@@ -138,6 +159,7 @@ export function makeDrizzlePostRepository(db: DbExecutor): PostRepository {
     countActiveByBoardId,
     sumFileSizeByBoardId,
     findPublished,
+    findByBoardId,
     findExpired,
     markRemoved,
     findByPublicId,
