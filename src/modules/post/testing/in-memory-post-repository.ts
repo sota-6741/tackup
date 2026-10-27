@@ -12,6 +12,7 @@ import type {
   FindPublishedInput,
   MarkRemovedInput,
   PostRepository,
+  ReplaceFilesData,
   UpdatePostData,
 } from "@/modules/post/domain/post-repository";
 
@@ -122,6 +123,31 @@ export function makeInMemoryPostRepository() {
     return true;
   }
 
+  async function replaceFiles({
+    id,
+    originalKey,
+    originalContentType,
+    originalSize,
+    thumbnailKey,
+    thumbnailSize,
+    thumbnailWidth,
+    thumbnailHeight,
+  }: ReplaceFilesData): Promise<boolean> {
+    const post = posts.find((item) => item.id === id);
+    if (!post || post.status === "removed") return false;
+    Object.assign(post, {
+      originalKey,
+      originalContentType,
+      originalSize,
+      thumbnailKey,
+      thumbnailSize,
+      thumbnailWidth,
+      thumbnailHeight,
+      updatedAt: new Date(),
+    });
+    return true;
+  }
+
   async function findByPublicId(publicId: string): Promise<Post | null> {
     return posts.find((post) => post.publicId === publicId) ?? null;
   }
@@ -135,6 +161,7 @@ export function makeInMemoryPostRepository() {
     findExpired,
     markRemoved,
     update,
+    replaceFiles,
     findByPublicId,
   };
 

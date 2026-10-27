@@ -528,3 +528,57 @@ test("撤去済みの掲示物は編集せず、false を返す", async () => {
     created.title,
   );
 });
+
+test("原本を差し替えると、原本とサムネイルの値を書き換え、ほかの値は変えない", async () => {
+  const board = await createBoard();
+  const created = await repository.create(postData(board.id));
+  const prefix = `boards/${board.id}/posts/${created.id}/rev-1/`;
+
+  const replaced = await repository.replaceFiles({
+    id: created.id,
+    originalKey: `${prefix}original`,
+    originalContentType: "image/png",
+    originalSize: 2000,
+    thumbnailKey: `${prefix}thumbnail`,
+    thumbnailSize: 200,
+    thumbnailWidth: 800,
+    thumbnailHeight: 600,
+  });
+
+  expect(replaced).toBe(true);
+  expect(await repository.findByPublicId(created.publicId)).toMatchObject({
+    originalKey: `${prefix}original`,
+    originalContentType: "image/png",
+    originalSize: 2000,
+    thumbnailKey: `${prefix}thumbnail`,
+    thumbnailSize: 200,
+    thumbnailWidth: 800,
+    thumbnailHeight: 600,
+    title: created.title,
+    status: "published",
+  });
+  expect(await repository.sumFileSizeByBoardId(board.id)).toBe(2200);
+});
+
+test("撤去済みの掲示物は原本を差し替えず、false を返す", async () => {
+  const board = await createBoard();
+  const created = await repository.create(
+    postData(board.id, { status: "removed" }),
+  );
+
+  const replaced = await repository.replaceFiles({
+    id: created.id,
+    originalKey: "boards/x/posts/y/rev-1/original",
+    originalContentType: "image/png",
+    originalSize: 2000,
+    thumbnailKey: "boards/x/posts/y/rev-1/thumbnail",
+    thumbnailSize: 200,
+    thumbnailWidth: 800,
+    thumbnailHeight: 600,
+  });
+
+  expect(replaced).toBe(false);
+  expect((await repository.findByPublicId(created.publicId))?.originalKey).toBe(
+    created.originalKey,
+  );
+});

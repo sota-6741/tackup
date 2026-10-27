@@ -175,3 +175,52 @@ test("掲示物を編集すると、掲示物一覧と掲示物詳細に反映�
   await expect(updated).toContainText("撤去済み");
   await expect(updated.getByRole("link", { name: "編集" })).toHaveCount(0);
 });
+
+test("編集の画面でファイルを差し替えると、新しいサムネイルに変わる", async ({
+  page,
+  context,
+}) => {
+  await signIn(context);
+  const boardUrl = await createBoard(page);
+  await registerPost(page, {
+    boardUrl,
+    title: "夏祭りのお知らせ",
+    publishFrom: "2026-01-01T00:00",
+    expiresAt: null,
+  });
+  await page.goto(`${boardUrl}/posts`);
+  await page
+    .getByRole("listitem")
+    .filter({ hasText: "夏祭りのお知らせ" })
+    .getByRole("link", { name: "編集" })
+    .click();
+  const current = page.getByAltText("今のサムネイル");
+  const portrait = {
+    width: Number(await current.getAttribute("width")),
+    height: Number(await current.getAttribute("height")),
+  };
+  expect(portrait.width).toBeLessThan(portrait.height);
+
+  // 縦長の PDF を、横長の PDF に差し替える。
+  const pdf = await makePdfFile({ width: 842, height: 595 });
+  await page.getByLabel("新しいファイル").setInputFiles({
+    name: "夏祭りのお知らせ（改訂版）.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from(await pdf.arrayBuffer()),
+  });
+  await expect(page.getByAltText("サムネイル")).toBeVisible();
+  await page.getByRole("button", { name: "ファイルを差し替える" }).click();
+
+  await expect(page.getByRole("status")).toHaveText(
+    "ファイルを差し替えました。",
+  );
+  await expect
+    .poll(async () => {
+      const width = Number(await current.getAttribute("width"));
+      const height = Number(await current.getAttribute("height"));
+      return width > height;
+    })
+    .toBe(true);
+  // 項目の編集は差し替えに関係なく残る。
+  await expect(page.getByLabel(/タイトル/)).toHaveValue("夏祭りのお知らせ");
+});

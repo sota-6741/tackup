@@ -340,6 +340,7 @@ retry するときは回数の上限、backoff、必要なら jitter、対象の
 - 同じ例外を複数のレイヤーで何度もログに出さない（Repository・UseCase・Server Action・`error.tsx` のそれぞれで出すと、1 回の障害が何度も記録される）。エラーを処理する境界か、最後に捕まえる境界で出す。
 - 安全な範囲で文脈を付ける（requestId、操作名、リソースの種類、安全なリソース ID、Infrastructure のエラーコード）。
 - 秘密の値や生の Request Body を出さない。
+- `console` を直接使わず、`@/shared/domain/logger` の `Logger` を使う。use case には Repository と同じく依存として渡し（本番は `@/di/logger`、テストは `@/shared/testing/in-memory-logger`）、`logger.error(message, { error, fields })` の形で出す。エラーは名前・メッセージ・コードだけになり、1 行の JSON（Cloud Logging の構造化ログ）で出る。
 
 ---
 

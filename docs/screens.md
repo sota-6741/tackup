@@ -506,13 +506,16 @@ src/app/boards/[boardId]/posts/page.tsx   [Server] getBoard・listPosts。失敗
 
 ### 掲示物の編集 `/boards/{boardId}/posts/{publicId}/edit`
 
-要件 17。タイトル・掲示期間・説明文・外部リンクを書き換える。メンバー向けレイアウトの中に表示する。
+要件 17。原本を差し替え、タイトル・掲示期間・説明文・外部リンクを書き換える。メンバー向けレイアウトの中に表示する。
 
 | 項目 | 内容 |
 | -- | -- |
 | データ | `getEditablePost({ boardId, publicId, userId })` |
 | 開ける人 | その掲示板のメンバー。メンバーでない・ほかの掲示板の掲示物・撤去済みなら 404 |
-| 見出し | 「掲示物一覧へ戻る」のリンクと「掲示物を編集」（`h1`）。下に今のサムネイル |
+| 見出し | 「掲示物一覧へ戻る」のリンクと「掲示物を編集」（`h1`）。その下に「ファイル」と「内容」の 2 つの欄（`h2`） |
+| ファイルの欄 | 今のサムネイルと、ファイル（要件の「原本」）の差し替え。項目の編集とは別に保存する |
+| 原本の差し替え | 登録と同じく、ファイルを選ぶとブラウザでサムネイルを作って表示する。「ファイルを差し替える」で `createReplacementUploadUrlsAction` → 署名付きの URL へアップロード → `replaceOriginalAction`。成功したら「ファイルを差し替えました。」と出し、画面を読み込み直して新しいサムネイルを出す。失敗したら理由を出す（撤去済みにされていた、容量の上限、回数の制限など） |
+| 原本の差し替えの容量 | 掲示物の数は増えないので、数の上限は見ない。容量は「今の合計 − 今のファイル + 新しいファイル」で確かめる |
 | 入力項目 | 登録と同じ（`PostFields`）。今の値を入れて開く。日時はブラウザのタイムゾーンで入れる。無期限の掲示物は「無期限にする」にチェックを入れて開く |
 | 確認 | 登録と同じ決まりを、送る前にブラウザでも確かめる |
 | 保存する | `updatePostAction`。成功したら掲示物一覧へ移動する。失敗したら理由を出す（撤去済みにされていた、回数の制限など） |
@@ -520,6 +523,8 @@ src/app/boards/[boardId]/posts/page.tsx   [Server] getBoard・listPosts。失敗
 
 ```
 src/app/boards/[boardId]/posts/[publicId]/edit/page.tsx   [Server] getEditablePost。失敗なら 404
+├ ReplaceOriginalForm                                     [Client] modules/post/presentation
+│ └ OriginalFileField                                     登録の画面と共通のファイルの入力欄
 └ EditPostForm                                            [Client] modules/post/presentation
   └ PostFields                                            登録の画面と共通の入力欄
 ```

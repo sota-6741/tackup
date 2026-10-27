@@ -52,6 +52,28 @@ export type CreateUploadUrlsResult =
         | "storage_limit_exceeded";
     };
 
+export async function createUploadTarget({
+  fileStorage,
+  generateUploadKey,
+  boardId,
+  userId,
+  file,
+}: {
+  fileStorage: FileStorage;
+  generateUploadKey: Deps["generateUploadKey"];
+  boardId: string;
+  userId: string;
+  file: DeclaredFile;
+}): Promise<UploadTarget> {
+  const key = generateUploadKey({ boardId, userId });
+  const { url, headers } = await fileStorage.createUploadUrl({
+    key,
+    contentType: file.contentType,
+    size: file.size,
+  });
+  return { uploadUrl: url, uploadHeaders: headers, key };
+}
+
 /** 掲示物の数と容量は、ここではロックせずに確かめる。無駄なアップロードを早く止めるためで、上限を守るのは掲示物の登録（`registerPost`）。 */
 export function makeCreateUploadUrls({
   checkBoardAccess,
@@ -59,24 +81,6 @@ export function makeCreateUploadUrls({
   postRepository,
   generateUploadKey,
 }: Deps) {
-  async function createTarget({
-    boardId,
-    userId,
-    file,
-  }: {
-    boardId: string;
-    userId: string;
-    file: DeclaredFile;
-  }): Promise<UploadTarget> {
-    const key = generateUploadKey({ boardId, userId });
-    const { url, headers } = await fileStorage.createUploadUrl({
-      key,
-      contentType: file.contentType,
-      size: file.size,
-    });
-    return { uploadUrl: url, uploadHeaders: headers, key };
-  }
-
   return async function createUploadUrls({
     boardId,
     userId,
@@ -103,10 +107,17 @@ export function makeCreateUploadUrls({
       return { ok: false, reason: "storage_limit_exceeded" };
     }
 
-    const [originalTarget, thumbnailTarget] = await Promise.all([
-      createTarget({ boardId, userId, file: originalFile }),
-      createTarget({ boardId, userId, file: thumbnailFile }),
-    ]);
+    const [originalTarget, thumbnailTarget] = await Promise.all(
+      [originalFile, thumbnailFile].map((file) =>
+        createUploadTarget({
+          fileStorage,
+          generateUploadKey,
+          boardId,
+          userId,
+          file,
+        }),
+      ),
+    );
     return { ok: true, original: originalTarget, thumbnail: thumbnailTarget };
   };
 }

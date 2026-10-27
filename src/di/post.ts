@@ -1,8 +1,10 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { checkBoardAccess } from "@/di/board";
+import { logger } from "@/di/logger";
 import { rateLimiter } from "@/di/rate-limiter";
 import { makeDrizzleBoardRepository } from "@/modules/board/infrastructure/drizzle-board-repository";
+import { makeCreateReplacementUploadUrls } from "@/modules/post/application/create-replacement-upload-urls";
 import { makeCreateUploadUrls } from "@/modules/post/application/create-upload-urls";
 import { makeFindAccessiblePost } from "@/modules/post/application/find-accessible-post";
 import { makeGetEditablePost } from "@/modules/post/application/get-editable-post";
@@ -17,6 +19,7 @@ import { makeListRemovalTasks } from "@/modules/post/application/list-removal-ta
 import { makeRecordPostView } from "@/modules/post/application/record-post-view";
 import { makeRegisterPost } from "@/modules/post/application/register-post";
 import { makeRemovePost } from "@/modules/post/application/remove-post";
+import { makeReplaceOriginal } from "@/modules/post/application/replace-original";
 import { makeUpdatePost } from "@/modules/post/application/update-post";
 import { makeDrizzlePostRepository } from "@/modules/post/infrastructure/drizzle-post-repository";
 import { makeDrizzleViewLogRepository } from "@/modules/post/infrastructure/drizzle-view-log-repository";
@@ -105,6 +108,28 @@ export const getEditablePost = makeGetEditablePost({
 
 export const updatePost = withRateLimit(
   makeUpdatePost({ checkBoardAccess, postRepository }),
+  { rateLimiter, rule: WRITE_RATE_LIMIT },
+);
+
+export const createReplacementUploadUrls = withRateLimit(
+  makeCreateReplacementUploadUrls({
+    checkBoardAccess,
+    fileStorage,
+    postRepository,
+    generateUploadKey,
+  }),
+  { rateLimiter, rule: UPLOAD_URL_RATE_LIMIT },
+);
+
+export const replaceOriginal = withRateLimit(
+  makeReplaceOriginal({
+    checkBoardAccess,
+    fileStorage,
+    postRepository,
+    unitOfWork,
+    generateRevision: randomUUID,
+    logger,
+  }),
   { rateLimiter, rule: WRITE_RATE_LIMIT },
 );
 
