@@ -15,7 +15,7 @@ import {
 import { Button } from "@/shared/presentation/components/ui/button";
 import { removePostAction } from "./actions";
 
-/** 撤去済みは元に戻せないので、確認してから記録する。成功すると、一覧が読み込み直されてこの行が消える。 */
+/** 撤去済みは元に戻せないので、確認してから記録する。成功すると一覧が読み込み直され、撤去タスクではこの行が消え、掲示物一覧では状態が撤去済みに変わる。 */
 export function RemovePostButton({
   publicId,
   title,
