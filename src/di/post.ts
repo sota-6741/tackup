@@ -9,7 +9,7 @@ import { makeGetPostDetail } from "@/modules/post/application/get-post-detail";
 import { makeGetPostFileUrl } from "@/modules/post/application/get-post-file-url";
 import { makeGetPostQrCode } from "@/modules/post/application/get-post-qr-code";
 import { makeListBoardPosts } from "@/modules/post/application/list-board-posts";
-import { makeListManagedPosts } from "@/modules/post/application/list-managed-posts";
+import { makeListPosts } from "@/modules/post/application/list-posts";
 import { makeListPublicBoardPosts } from "@/modules/post/application/list-public-board-posts";
 import { makeListPublishedPosts } from "@/modules/post/application/list-published-posts";
 import { makeListRemovalTasks } from "@/modules/post/application/list-removal-tasks";
@@ -76,7 +76,7 @@ export const listPublicBoardPosts = makeListPublicBoardPosts({
   listPublishedPosts,
 });
 
-export const listManagedPosts = makeListManagedPosts({
+export const listPosts = makeListPosts({
   checkBoardAccess,
   postRepository,
   fileStorage,

@@ -25,7 +25,7 @@ type Deps = {
   now: () => Date;
 };
 
-export type ListManagedPostsInput = {
+export type ListPostsInput = {
   boardId: string;
   userId: string;
   /** 前のページの `nextCursor`。URL から来る値なので、形が合わなければ最初のページを返す。 */
@@ -33,7 +33,7 @@ export type ListManagedPostsInput = {
 };
 
 /** 画面に渡す形。内部の ID とストレージのキーは含めない。 */
-export type ManagedPostView = {
+export type PostListItem = {
   publicId: string;
   title: string;
   thumbnailUrl: string;
@@ -48,10 +48,10 @@ export type ManagedPostView = {
   canRemove: boolean;
 };
 
-export type ListManagedPostsResult =
+export type ListPostsResult =
   | {
       ok: true;
-      posts: ManagedPostView[];
+      posts: PostListItem[];
       /** 続きがなければ `null`。 */
       nextCursor: string | null;
       /** 続きのページか。`cursor` の形が合わずに最初のページを返したときは `false`。 */
@@ -59,18 +59,18 @@ export type ListManagedPostsResult =
     }
   | { ok: false; reason: "board_not_found" | "forbidden" };
 
-/** 掲示物の管理の一覧。掲示板のすべての掲示物を、状態を付けて、掲示開始の新しい順に 1 ページ分返す。 */
-export function makeListManagedPosts({
+/** 掲示物一覧。掲示板のすべての掲示物を、状態を付けて、掲示開始の新しい順に 1 ページ分返す。 */
+export function makeListPosts({
   checkBoardAccess,
   postRepository,
   fileStorage,
   now,
 }: Deps) {
-  return async function listManagedPosts({
+  return async function listPosts({
     boardId,
     userId,
     cursor,
-  }: ListManagedPostsInput): Promise<ListManagedPostsResult> {
+  }: ListPostsInput): Promise<ListPostsResult> {
     const access = await checkBoardAccess({ boardId, userId, roles: ROLES });
     if (!access.ok) return access;
 

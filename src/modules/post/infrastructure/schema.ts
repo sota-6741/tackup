@@ -51,7 +51,7 @@ export const post = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    // 掲示物の管理の一覧（すべての掲示物を、掲示開始の新しい順に並べる）の絞り込みと並び順に合わせる。掲示板ごとの数え上げにも使う。
+    // 掲示物一覧（すべての掲示物を、掲示開始の新しい順に並べる）の絞り込みと並び順に合わせる。掲示板ごとの数え上げにも使う。
     index("post_board_publish_from_idx").on(
       table.boardId,
       table.publishFrom,

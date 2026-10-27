@@ -5,7 +5,7 @@ import { POST_PAGE_SIZE } from "@/modules/post/domain/post";
 import type { CreatePostData } from "@/modules/post/domain/post-repository";
 import { makeInMemoryPostRepository } from "@/modules/post/testing/in-memory-post-repository";
 import { makeInMemoryFileStorage } from "@/shared/testing/in-memory-file-storage";
-import { makeListManagedPosts } from "./list-managed-posts";
+import { makeListPosts } from "./list-posts";
 
 const NOW = new Date("2026-10-15T00:00:00Z");
 const STORAGE = "https://storage.example.com";
@@ -49,17 +49,17 @@ async function setup() {
       ...overrides,
     });
   };
-  const listManagedPosts = makeListManagedPosts({
+  const listPosts = makeListPosts({
     checkBoardAccess: makeCheckBoardAccess({ boardRepository }),
     postRepository,
     fileStorage,
     now: () => NOW,
   });
-  return { listManagedPosts, createPost, board, posts };
+  return { listPosts, createPost, board, posts };
 }
 
 test("すべての状態の掲示物を、状態を付けて掲示開始の新しい順に返す。内部の ID とキーは含めない", async () => {
-  const { listManagedPosts, createPost, board, posts } = await setup();
+  const { listPosts, createPost, board, posts } = await setup();
   const published = await createPost({
     publishFrom: new Date("2026-10-05T00:00:00Z"),
   });
@@ -79,7 +79,7 @@ test("すべての状態の掲示物を、状態を付けて掲示開始の新�
   });
   Object.assign(posts[5], { removedAt: new Date("2026-07-10T00:00:00Z") });
 
-  const result = await listManagedPosts({
+  const result = await listPosts({
     boardId: board.id,
     userId: "member",
   });
@@ -113,15 +113,15 @@ test("すべての状態の掲示物を、状態を付けて掲示開始の新�
 });
 
 test("1 ページを超えるときは、続きの位置を返し、続きを重複も抜けもなく取れる", async () => {
-  const { listManagedPosts, createPost, board } = await setup();
+  const { listPosts, createPost, board } = await setup();
   for (let index = 0; index < POST_PAGE_SIZE + 2; index += 1) {
     await createPost({ status: index % 2 === 0 ? "removed" : "published" });
   }
   const input = { boardId: board.id, userId: "member" };
 
-  const first = await listManagedPosts(input);
+  const first = await listPosts(input);
   if (!first.ok || !first.nextCursor) throw new Error("続きがない");
-  const second = await listManagedPosts({ ...input, cursor: first.nextCursor });
+  const second = await listPosts({ ...input, cursor: first.nextCursor });
   if (!second.ok) throw new Error("続きを取れない");
 
   expect(first.posts).toHaveLength(POST_PAGE_SIZE);
@@ -134,10 +134,11 @@ test("1 ページを超えるときは、続きの位置を返し、続きを重
 });
 
 test("メンバーでない人には、掲示板がないときと同じ結果を返す", async () => {
-  const { listManagedPosts, createPost, board } = await setup();
+  const { listPosts, createPost, board } = await setup();
   await createPost();
 
-  expect(
-    await listManagedPosts({ boardId: board.id, userId: "stranger" }),
-  ).toEqual({ ok: false, reason: "board_not_found" });
+  expect(await listPosts({ boardId: board.id, userId: "stranger" })).toEqual({
+    ok: false,
+    reason: "board_not_found",
+  });
 });
