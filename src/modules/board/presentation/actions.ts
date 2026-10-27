@@ -2,12 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createBoard, reissueInviteToken } from "@/di/board";
+import { createBoard, getBoard, reissueInviteToken } from "@/di/board";
 import { getSession } from "@/modules/auth/presentation/session";
 import type { CreateBoardResult } from "@/modules/board/application/create-board";
+import type { GetBoardResult } from "@/modules/board/application/get-board";
 import type { ReissueInviteTokenResult } from "@/modules/board/application/reissue-invite-token";
 import { BOARD_NAME_MAX_LENGTH } from "@/modules/board/domain/board";
 import type { RateLimited } from "@/shared/domain/rate-limiter";
+import type {
+  ActionFailureReason,
+  ActionResult,
+} from "@/shared/presentation/lib/action-result";
 import { RATE_LIMITED_MESSAGE } from "@/shared/presentation/lib/messages";
 
 export type CreateBoardState = {
@@ -90,5 +95,48 @@ export async function reissueInviteTokenAction(
   }
 
   revalidatePath(`/boards/${boardId}`);
+  return { ok: true, inviteUrl: result.inviteUrl };
+}
+
+const COPY_FAILED = "コピーできませんでした。画面を読み込み直してください。";
+
+const CURRENT_INVITE_URL_ERROR_MESSAGES: Record<
+  ActionFailureReason<GetBoardResult> | "board_not_public",
+  string
+> = {
+  invalid_input: COPY_FAILED,
+  rate_limited: RATE_LIMITED_MESSAGE,
+  board_not_found: COPY_FAILED,
+  forbidden: COPY_FAILED,
+  board_not_public:
+    "この掲示板は非公開になったため、招待リンクはありません。画面を読み込み直してください。",
+};
+
+/** 画面を開いたあとに再発行されていても、今の招待リンクを返す。コピーの直前に呼ぶ。 */
+export async function getCurrentInviteUrlAction(
+  boardId: unknown,
+): Promise<ActionResult<{ inviteUrl: string }>> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  if (typeof boardId !== "string") {
+    return {
+      ok: false,
+      error: CURRENT_INVITE_URL_ERROR_MESSAGES.invalid_input,
+    };
+  }
+
+  const result = await getBoard({ boardId, userId: session.user.id });
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: CURRENT_INVITE_URL_ERROR_MESSAGES[result.reason],
+    };
+  }
+  if (result.inviteUrl === null) {
+    return {
+      ok: false,
+      error: CURRENT_INVITE_URL_ERROR_MESSAGES.board_not_public,
+    };
+  }
   return { ok: true, inviteUrl: result.inviteUrl };
 }
