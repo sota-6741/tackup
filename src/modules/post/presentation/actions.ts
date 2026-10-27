@@ -19,6 +19,10 @@ import type { RemovePostResult } from "@/modules/post/application/remove-post";
 import type { UpdatePostResult } from "@/modules/post/application/update-post";
 import { ORIGINAL_FILE_MAX_SIZE } from "@/modules/post/domain/original-file";
 import type { RateLimited } from "@/shared/domain/rate-limiter";
+import type {
+  ActionFailureReason,
+  ActionResult,
+} from "@/shared/presentation/lib/action-result";
 import { RATE_LIMITED_MESSAGE } from "@/shared/presentation/lib/messages";
 import { POST_INPUT_ERROR_MESSAGES } from "./post-messages";
 
@@ -199,14 +203,12 @@ const updatePostInput = z.object({
   expiresAt: z.iso.datetime().nullable(),
 });
 
-export type UpdatePostActionResult =
-  | { ok: true; boardId: string }
-  | { ok: false; error: string };
-
 const UPDATE_POST_ERROR_MESSAGES: Record<
-  Extract<UpdatePostResult | RateLimited, { ok: false }>["reason"],
+  ActionFailureReason<UpdatePostResult>,
   string
 > = {
+  invalid_input:
+    "保存できませんでした。画面を読み込み直して、もう一度お試しください。",
   rate_limited: RATE_LIMITED_MESSAGE,
   post_not_found:
     "掲示物が見つかりません。画面を読み込み直して、もう一度お試しください。",
@@ -216,12 +218,14 @@ const UPDATE_POST_ERROR_MESSAGES: Record<
 
 export async function updatePostAction(
   input: unknown,
-): Promise<UpdatePostActionResult> {
+): Promise<ActionResult<{ boardId: string }>> {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
   const parsed = updatePostInput.safeParse(input);
-  if (!parsed.success) return { ok: false, error: UNEXPECTED_INPUT };
+  if (!parsed.success) {
+    return { ok: false, error: UPDATE_POST_ERROR_MESSAGES.invalid_input };
+  }
   const { publicId, expiresAt } = parsed.data;
 
   const result = await updatePost({
